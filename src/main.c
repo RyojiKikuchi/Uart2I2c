@@ -545,17 +545,20 @@ static void cmd_snd(char *param) {
     bool ok = true;
 
     if (!g_i2c_open) {
-        /* I2C start (timeout-protected); retry once after bus recovery if bus locked */
-        if (!i2c_putstart()) {
-            send_ng_i2();
-            return;
-        }
 
         /* Send address + write bit */
         uint8_t retry = 2;
         while(true){
+
+            /* I2C start (timeout-protected); retry once after bus recovery if bus locked */
+            if (!i2c_putstart()) {
+                send_ng_i2();
+                return;
+            }
+
             if (!i2c_write((uint8_t) (((unsigned int) addr << 1U) | I2C_WRITE_BIT))) {
-                if(retry--){
+                if(retry > 0){
+                    retry--;
                     __delay_ms(1);
                     continue;
                 }
@@ -625,16 +628,19 @@ static void cmd_rcv(char *param) {
 
     g_i2c_open = false;
 
-    /* I2C start (timeout-protected); retry once after bus recovery if bus locked */
-    if (!i2c_putstart()) {
-        goto rcv_recovery;
-    }
 
     /* Send address + read bit */
     uint8_t retry = 2;
     while(true){
+
+        /* I2C start (timeout-protected); retry once after bus recovery if bus locked */
+        if (!i2c_putstart()) {
+            goto rcv_recovery;
+        }
+
         if (!i2c_write((uint8_t) (((unsigned int) addr << 1U) | I2C_READ_BIT))) {
-            if(retry--){
+            if(retry > 0){
+                retry--;
                 __delay_ms(1);
                 continue;
             }
