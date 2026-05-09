@@ -74,6 +74,14 @@ bool i2c_start(void) {
     return true;
 }
 
+// リスタート条件
+
+bool i2c_restart(void) {
+    if (!i2c_wait(false)) return false;
+    SSP1CON2bits.RSEN = 1;
+    return i2c_wait(false);
+}
+
 // 停止条件
 
 bool i2c_stop(void) {
@@ -206,3 +214,14 @@ bool i2c_putstart() {
     return true;
 }
 
+// I2Cリスタート送信
+
+bool i2c_putrestart() {
+    if (!i2c_restart()) {
+        i2c_recovery();
+        if (!i2c_start()) {
+            return false;
+        }
+    }
+    return true;
+}

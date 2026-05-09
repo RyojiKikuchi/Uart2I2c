@@ -545,16 +545,32 @@ static void cmd_snd(char *param) {
     bool ok = true;
 
     if (!g_i2c_open) {
-        /* I2C start (timeout-protected); retry once after bus recovery if bus locked */
-        if (!i2c_putstart()) {
-            send_ng_i2();
-            return;
-        }
 
         /* Send address + write bit */
-        if (!i2c_write((uint8_t) (((unsigned int) addr << 1U) | I2C_WRITE_BIT))) {
-            ok = false;
-            goto snd_stop;
+        uint8_t retry = 2;
+        bool first_try = true;
+        while (true) {
+
+            /* ACK polling:
+             * - first try: START + address
+             * - retries : Repeated START + address (no STOP between retries) */
+            if ((first_try && !i2c_putstart()) ||
+                    (!first_try && !i2c_putrestart())) {
+                send_ng_i2();
+                return;
+            }
+            first_try = false;
+
+            if (!i2c_write((uint8_t) (((unsigned int) addr << 1U) | I2C_WRITE_BIT))) {
+                if (retry > 0) {
+                    retry--;
+                    __delay_ms(1);
+                    continue;
+                }
+                ok = false;
+                goto snd_stop;
+            }
+            break;
         }
     }
     /* When g_i2c_open is true (NS continuation): the bus is already held open from
@@ -615,21 +631,41 @@ static void cmd_rcv(char *param) {
 
     /* Start I2C transaction */
 
-    g_i2c_open = false;
 
-    /* I2C start (timeout-protected); retry once after bus recovery if bus locked */
-    if (!i2c_putstart()) {
-        goto rcv_recovery;
-    }
 
     /* Send address + read bit */
-    if (!i2c_write((uint8_t) (((unsigned int) addr << 1U) | I2C_READ_BIT))) {
-        /* NACK on address, or timeout (stuck bus) → send STOP and return NG,I2.
-         * If STOP itself fails, fall back to bus recovery. */
-        if (!i2c_stop()) {
+    uint8_t retry = 2;
+    bool first_try = true;
+    if (g_i2c_open) {
+        // stopされていない場合はリスタートにする
+        first_try = false;
+    }
+    g_i2c_open = false;
+    while (true) {
+
+        /* ACK polling:
+         * - first try: START + address
+         * - retries : Repeated START + address (no STOP between retries) */
+        if ((first_try && !i2c_putstart()) ||
+                (!first_try && !i2c_putrestart())) {
             goto rcv_recovery;
         }
-        goto rcv_stop;
+        first_try = false;
+
+        if (!i2c_write((uint8_t) (((unsigned int) addr << 1U) | I2C_READ_BIT))) {
+            if (retry > 0) {
+                retry--;
+                __delay_ms(1);
+                continue;
+            }
+            /* NACK on address, or timeout (stuck bus) → send STOP and return NG,I2.
+             * If STOP itself fails, fall back to bus recovery. */
+            if (!i2c_stop()) {
+                goto rcv_recovery;
+            }
+            goto rcv_stop;
+        }
+        break;
     }
 
     /* Receive bytes, output each as 2 hex digits immediately.
