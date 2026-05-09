@@ -631,12 +631,16 @@ static void cmd_rcv(char *param) {
 
     /* Start I2C transaction */
 
-    g_i2c_open = false;
 
 
     /* Send address + read bit */
     uint8_t retry = 2;
     bool first_try = true;
+    if (g_i2c_open) {
+        // stopされていない場合はリスタートにする
+        first_try = false;
+    }
+    g_i2c_open = false;
     while (true) {
 
         /* ACK polling:
