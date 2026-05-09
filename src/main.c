@@ -552,9 +552,17 @@ static void cmd_snd(char *param) {
         }
 
         /* Send address + write bit */
-        if (!i2c_write((uint8_t) (((unsigned int) addr << 1U) | I2C_WRITE_BIT))) {
-            ok = false;
-            goto snd_stop;
+        uint8_t retry = 2;
+        while(true){
+            if (!i2c_write((uint8_t) (((unsigned int) addr << 1U) | I2C_WRITE_BIT))) {
+                if(retry--){
+                    __delay_ms(1);
+                    continue;
+                }
+                ok = false;
+                goto snd_stop;
+            }
+            break;
         }
     }
     /* When g_i2c_open is true (NS continuation): the bus is already held open from
@@ -623,13 +631,21 @@ static void cmd_rcv(char *param) {
     }
 
     /* Send address + read bit */
-    if (!i2c_write((uint8_t) (((unsigned int) addr << 1U) | I2C_READ_BIT))) {
-        /* NACK on address, or timeout (stuck bus) → send STOP and return NG,I2.
-         * If STOP itself fails, fall back to bus recovery. */
-        if (!i2c_stop()) {
-            goto rcv_recovery;
+    uint8_t retry = 2;
+    while(true){
+        if (!i2c_write((uint8_t) (((unsigned int) addr << 1U) | I2C_READ_BIT))) {
+            if(retry--){
+                __delay_ms(1);
+                continue;
+            }
+            /* NACK on address, or timeout (stuck bus) → send STOP and return NG,I2.
+             * If STOP itself fails, fall back to bus recovery. */
+            if (!i2c_stop()) {
+                goto rcv_recovery;
+            }
+            goto rcv_stop;
         }
-        goto rcv_stop;
+        break;
     }
 
     /* Receive bytes, output each as 2 hex digits immediately.
