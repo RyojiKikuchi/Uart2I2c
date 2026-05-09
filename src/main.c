@@ -548,16 +548,21 @@ static void cmd_snd(char *param) {
 
         /* Send address + write bit */
         uint8_t retry = 2;
-        while(true){
+        bool first_try = true;
+        while (true) {
 
-            /* I2C start (timeout-protected); retry once after bus recovery if bus locked */
-            if (!i2c_putstart()) {
+            /* ACK polling:
+             * - first try: START + address
+             * - retries : Repeated START + address (no STOP between retries) */
+            if ((first_try && !i2c_putstart()) ||
+                    (!first_try && !i2c_putrestart())) {
                 send_ng_i2();
                 return;
             }
+            first_try = false;
 
             if (!i2c_write((uint8_t) (((unsigned int) addr << 1U) | I2C_WRITE_BIT))) {
-                if(retry > 0){
+                if (retry > 0) {
                     retry--;
                     __delay_ms(1);
                     continue;
@@ -631,15 +636,20 @@ static void cmd_rcv(char *param) {
 
     /* Send address + read bit */
     uint8_t retry = 2;
-    while(true){
+    bool first_try = true;
+    while (true) {
 
-        /* I2C start (timeout-protected); retry once after bus recovery if bus locked */
-        if (!i2c_putstart()) {
+        /* ACK polling:
+         * - first try: START + address
+         * - retries : Repeated START + address (no STOP between retries) */
+        if ((first_try && !i2c_putstart()) ||
+                (!first_try && !i2c_putrestart())) {
             goto rcv_recovery;
         }
+        first_try = false;
 
         if (!i2c_write((uint8_t) (((unsigned int) addr << 1U) | I2C_READ_BIT))) {
-            if(retry > 0){
+            if (retry > 0) {
                 retry--;
                 __delay_ms(1);
                 continue;

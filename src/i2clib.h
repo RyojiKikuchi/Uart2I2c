@@ -35,12 +35,13 @@
 void i2c_init(uint16_t speed_khz);
 bool i2c_wait(bool isRead);
 bool i2c_start(void);
+bool i2c_restart(void);
 bool i2c_stop(void);
 bool i2c_write(uint8_t data);
 bool i2c_read(uint8_t *data, uint8_t ack);
 void i2c_recovery(void);
 void i2c_abort(void);
 bool i2c_putstart(void);
+bool i2c_putrestart(void);
 
 #endif	/* I2CLIB_H */
-
