@@ -587,7 +587,6 @@ static void cmd_snd(char *param) {
         parse_hex_u8(&data_str[i], &byte_val);
         if (!i2c_write(byte_val)) {
             ok = false;
-            goto snd_stop;
         }
     }
 
@@ -631,8 +630,6 @@ static void cmd_rcv(char *param) {
     }
 
     /* Start I2C transaction */
-
-
 
     /* Send address + read bit */
     uint8_t retry = 2;
@@ -706,7 +703,7 @@ rcv_stop:
 
 /* uint8_t のビット並び順を逆転させる
  */
-uint8_t reverse_8bit(uint8_t h) {
+static uint8_t reverse_8bit(uint8_t h) {
     uint8_t r = 0;
     for(uint8_t i = 0; i < 8; i++) {
         r = (uint8_t)(r << 1U) | (h & 0x01U);
@@ -725,6 +722,11 @@ uint8_t reverse_8bit(uint8_t h) {
 static void cmd_snt(char *data_str) {
 
     /* データとオプションを分割 */
+    if (data_str == NULL || data_str[0] == '\0'){
+        send_ng_cm();
+        return;
+    }
+
     char *option_str = NULL;
 
     scan_to(data_str, ',', &option_str);
@@ -795,9 +797,8 @@ static void cmd_snt(char *data_str) {
     // データ受信
     if (data_read) {
         uint8_t b;
-        // データは1バイトのみだが ACK とする
-        // NACKにするとTM16xxが応答しなくなる(?)
-        // TM16xxがデータ送信後にACKを送っているように見える
+        // TM16xxはI2C互換ではないため NACK は想定していない
+        // 1byte Readでも ACK とする
         if (i2c_read(&b, 0)) {
             uart_putbyte_hex(b);
             uart_puts("\r\n");
