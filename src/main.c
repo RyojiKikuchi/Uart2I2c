@@ -25,8 +25,11 @@
  *       S4       : set UART to  57600 bps (applied before OK response)
  *       S5       : set UART to 115200 bps (applied before OK response)
  *       S6       : set UART to 230400 bps (applied before OK response)
+ *       S7       : set UART to 460800 bps (applied before OK response)
+ *       S8       : set UART to 921600 bps (applied before OK response)
  *     Unknown option → no reset, returns NG,CM
  *   SND,<addr_hex>,<hexdata>[,<NS|checksum>]<CRLF> - I2C write (NS=no-stop; optional CRC-8 checksum)
+ *   SNT,<hexdata>[,<R|D>]<CRLF> - I2C write (No addr) (R:bit Reversed, D:Data Read)
  *   RCV,<addr_hex>,<nbytes><CRLF>             - I2C read (response includes CRC-8 checksum)
  *
  * Compiler: XC8
@@ -547,7 +550,7 @@ static void cmd_snd(char *param) {
     if (!g_i2c_open) {
 
         /* Send address + write bit */
-        uint8_t retry = 2;
+        uint8_t retry = I2C_START_RETRY_COUNT;
         bool first_try = true;
         while (true) {
 
@@ -632,7 +635,7 @@ static void cmd_rcv(char *param) {
     /* Start I2C transaction */
 
     /* Send address + read bit */
-    uint8_t retry = 2;
+    uint8_t retry = I2C_START_RETRY_COUNT;
     bool first_try = true;
     if (g_i2c_open) {
         // stopされていない場合はリスタートにする
@@ -721,14 +724,14 @@ static uint8_t reverse_8bit(uint8_t h) {
  */
 static void cmd_snt(char *data_str) {
 
-    /* データとオプションを分割 */
+    /* パラメタチェック */
     if (data_str == NULL || data_str[0] == '\0'){
         send_ng_cm();
         return;
     }
 
+    /* データとオプションを分割 */
     char *option_str = NULL;
-
     scan_to(data_str, ',', &option_str);
 
     /* オプション解析
@@ -799,6 +802,7 @@ static void cmd_snt(char *data_str) {
         uint8_t b;
         // TM16xxはI2C互換ではないため NACK は想定していない
         // 1byte Readでも ACK とする
+        // 本来はマスタ側からACK/NACKを送信するが、TM16xxがACKを送信してくる。
         if (i2c_read(&b, 0)) {
             uart_putbyte_hex(b);
             uart_puts("\r\n");
