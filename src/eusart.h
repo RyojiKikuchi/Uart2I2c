@@ -11,6 +11,22 @@
 #include <xc.h>
 #include <stdbool.h>
 
+/* -----------------------------------------------------------------------
+ * Hardware EUSART baud rate selection
+ * FOSC = 32 MHz, BRG16 = 1, BRGH = 1
+ * Formula: SPBRGx = (FOSC / (4 * BaudRate)) - 1
+ * ----------------------------------------------------------------------- */
+static const uint16_t UART_BAUD[8] = {
+    96U,    /* 9600bps,   actual: 9604 bps,   error: 0.04% */
+    192U,   /* 19200bps,  actual: 19185 bps,  error: 0.08% */
+    384U,   /* 38400bps,  actual: 38462 bps,  error: 0.16% */
+    576U,   /* 57600bps,  actual: 57554 bps,  error: 0.08% */
+    1152U,  /* 115200bps, actual: 115942 bps, error: 0.64% */
+    2304U,  /* 230400bps, actual: 228571 bps, error: 0.79% */
+    4608U,  /* 460800bps, actual: 470588 bps, error: 2.12% */
+    9216U   /* 921600bps, actual: 888888 bps, error: 3.55% */
+};
+
 #define _XTAL_FREQ          32000000UL   /* 32 MHz internal oscillator */
 #define SPBRG_CALC_NUMBER   (uint16_t)(_XTAL_FREQ / 800U) // 16bitでspbrg計算のために事前にクロックを800で割っておく
 
