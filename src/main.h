@@ -30,22 +30,6 @@
 #define LOOP_CYCLE_1MS  (uint16_t)(_XTAL_FREQ / 4000U)
 
 /* -----------------------------------------------------------------------
- * Hardware EUSART baud rate selection
- * FOSC = 32 MHz, BRG16 = 1, BRGH = 1
- * Formula: SPBRGx = (FOSC / (4 * BaudRate)) - 1
- * ----------------------------------------------------------------------- */
-static const uint16_t UART_BAUD[8] = {
-    96U,    /* 9600bps,   actual: 9604 bps,   error: 0.04% */
-    192U,   /* 19200bps,  actual: 19185 bps,  error: 0.08% */
-    384U,   /* 38400bps,  actual: 38462 bps,  error: 0.16% */
-    576U,   /* 57600bps,  actual: 57554 bps,  error: 0.08% */
-    1152U,  /* 115200bps, actual: 115942 bps, error: 0.64% */
-    2304U,  /* 230400bps, actual: 228571 bps, error: 0.79% */
-    4608U,  /* 460800bps, actual: 470588 bps, error: 2.12% */
-    9216U   /* 921600bps, actual: 888888 bps, error: 3.55% */
-};
-
-/* -----------------------------------------------------------------------
  * Serial command buffer
  * CMD_BUF_SIZE must hold the longest possible command line:
  *   "SND,7F," (7) + I2C_DATA_MAX*2 hex chars + ",XX"  checksum (3) + ",NS" (3) + null = 146 bytes.
@@ -69,8 +53,6 @@ static const uint16_t UART_BAUD[8] = {
 #define PIN_RESET_LOW()   do { LATAbits.LATA2 = 0; } while(0)
 #define PIN_RESET_HIGH()  do { LATAbits.LATA2 = 1; } while(0)
 
-
-
 #define CMD_CALC(a, b, c) \
                 (uint16_t)(((uint16_t)a & 0x1FU) | \
                           (((uint16_t)b & 0x1FU) << 5) | \
@@ -84,6 +66,8 @@ static const uint16_t UART_BAUD[8] = {
 #define CMD_NOP     CMD_CALC('N', 'O', 'P')
 
 #define CRC8_POLY  0x07U
+
+#define I2C_START_RETRY_COUNT 2U
 
 /* Watchdog configuration note:
  * Do not define WDT_ENABLED in this header. main.c checks WDT_ENABLED for
