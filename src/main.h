@@ -35,14 +35,14 @@
  * Formula: SPBRGx = (FOSC / (4 * BaudRate)) - 1
  * ----------------------------------------------------------------------- */
 static const uint16_t UART_BAUD[8] = {
-    96U,    /* actual: 9604 bps,   error: 0.04% */
-    192U,   /* actual: 19185 bps,  error: 0.08% */
-    384U,   /* actual: 38462 bps,  error: 0.16% */
-    576U,   /* actual: 57554 bps,  error: 0.08% */
-    1152U,  /* actual: 115942 bps, error: 0.64% */
-    2304U,  /* actual: 228571 bps, error: 0.79% */
-    4608U,  /* actual: 470588 bps, error: 2.12% */
-    9216U   /* actual: 888888 bps, error: 3.55% */
+    96U,    /* 9600bps,   actual: 9604 bps,   error: 0.04% */
+    192U,   /* 19200bps,  actual: 19185 bps,  error: 0.08% */
+    384U,   /* 38400bps,  actual: 38462 bps,  error: 0.16% */
+    576U,   /* 57600bps,  actual: 57554 bps,  error: 0.08% */
+    1152U,  /* 115200bps, actual: 115942 bps, error: 0.64% */
+    2304U,  /* 230400bps, actual: 228571 bps, error: 0.79% */
+    4608U,  /* 460800bps, actual: 470588 bps, error: 2.12% */
+    9216U   /* 921600bps, actual: 888888 bps, error: 3.55% */
 };
 
 /* -----------------------------------------------------------------------
@@ -78,6 +78,7 @@ static const uint16_t UART_BAUD[8] = {
 
 #define CMD_RST     CMD_CALC('R', 'S', 'T')
 #define CMD_SND     CMD_CALC('S', 'N', 'D')
+#define CMD_SNT     CMD_CALC('S', 'N', 'T')
 #define CMD_RCV     CMD_CALC('R', 'C', 'V')
 #define CMD_VER     CMD_CALC('V', 'E', 'R')
 #define CMD_NOP     CMD_CALC('N', 'O', 'P')

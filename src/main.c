@@ -587,6 +587,7 @@ static void cmd_snd(char *param) {
         parse_hex_u8(&data_str[i], &byte_val);
         if (!i2c_write(byte_val)) {
             ok = false;
+            goto snd_stop;
         }
     }
 
@@ -703,6 +704,123 @@ rcv_stop:
     send_ng_i2();
 }
 
+/* uint8_t のビット並び順を逆転させる
+ */
+uint8_t reverse_8bit(uint8_t h) {
+    uint8_t r = 0;
+    for(uint8_t i = 0; i < 8; i++) {
+        r = (uint8_t)(r << 1U) | (h & 0x01U);
+        h >>= 1;
+    }
+    return r;
+}
+
+/**
+ * SNT,<hex_data>[,<option>]
+ * Transmit data without a slave address.
+ * 
+ * Intended for use when transmitting data to TM16xx series LED drivers.
+ * 
+ */
+static void cmd_snt(char *data_str) {
+
+    /* データとオプションを分割 */
+    char *option_str = NULL;
+
+    scan_to(data_str, ',', &option_str);
+
+    /* オプション解析
+     *  R: ビット列の順番を逆転させる
+     *  D: データリードを行う
+     *  */
+    
+    bool data_read = false;
+    bool bit_reverse = false;
+    if (option_str != NULL) {
+        for (uint8_t i = 0; option_str[i] != '\0'; i++){
+            switch (option_str[i]){
+                case 'R':
+                    bit_reverse = true;
+                    break;
+                case 'D':
+                    data_read = true;
+                    break;
+                default:
+                    send_ng_cm();
+                    return;
+            }
+        }
+    }
+    
+    uint8_t slen = 0;
+    uint8_t byte_val;
+    while (data_str[slen] != '\0') {
+        if (!(slen & 0x01U)) {
+            if (!parse_hex_u8(&data_str[slen], &byte_val)) {
+                send_ng_cm();
+                return;
+            }
+        }
+        slen++;
+    }
+
+    /* データ長が0、二文字区切りになっていない、データ長がI2C_DATA_MAXを
+     * 超える場合はコマンドエラーとする  */
+    if (slen == 0U || (slen & 1U) || slen > (uint8_t) (I2C_DATA_MAX * 2)) {
+        send_ng_cm();
+        return;
+    }
+
+    /* Start I2C transaction */
+    bool ok = true;
+    
+    /* Send Start */
+    if(!i2c_putstart()){
+        send_ng_i2();
+        return;
+    }
+
+    /* データ送信 */
+    for (uint8_t i = 0; i < slen && ok; i += 2U) {
+        parse_hex_u8(&data_str[i], &byte_val);
+        if (bit_reverse) {
+            byte_val = reverse_8bit(byte_val);
+        }
+        if (!i2c_write(byte_val)) {
+            ok = false;
+            goto snt_stop;
+        }
+        uart_putbyte_hex(byte_val);
+    }
+
+    // データ受信
+    if (data_read) {
+        uint8_t b;
+        // データは1バイトのみだが ACK とする
+        // NACKにするとTM16xxが応答しなくなる(?)
+        // TM16xxがデータ送信後にACKを送っているように見える
+        if (i2c_read(&b, 0)) {
+            uart_putbyte_hex(b);
+            uart_puts("\r\n");
+        } else {
+            ok = false;
+        }
+    }
+    
+snt_stop:
+
+    if (!i2c_stop()) {
+        ok = false;
+    }
+
+    if (ok) {
+        send_ok();
+    } else {
+        send_ng_i2();
+    }
+    
+}
+
 /* -----------------------------------------------------------------------
  * Command dispatcher
  * ----------------------------------------------------------------------- */
@@ -734,6 +852,10 @@ static void cmd_process(char *line) {
         case CMD_RST:
             I2C_AbortIfOpen();
             cmd_rst(param);
+            break;
+        case CMD_SNT:
+            I2C_AbortIfOpen();
+            cmd_snt(param);
             break;
         case CMD_SND:
             cmd_snd(param);
