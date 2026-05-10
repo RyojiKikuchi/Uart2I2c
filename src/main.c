@@ -790,7 +790,6 @@ static void cmd_snt(char *data_str) {
             ok = false;
             goto snt_stop;
         }
-        uart_putbyte_hex(byte_val);
     }
 
     // データ受信
