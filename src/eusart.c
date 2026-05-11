@@ -95,11 +95,9 @@ void uart_read_line(char *buf, uint8_t buf_size) {
         c = (char) uart_getch();
         switch (c) {
             case '\r':
-                /* Skip CR */
-                continue;
             case '\n':
-                /*  LF ends the line */
-                if (idx == 0) continue; /* skip leading LF     */
+                /*  CR/LF ends the line */
+                if (idx == 0) continue; /* skip leading CR/LF */
                 buf[idx] = '\0';
                 return;
         }
