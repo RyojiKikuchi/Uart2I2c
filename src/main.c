@@ -369,7 +369,7 @@ static bool parse_slave_address(char *param, uint8_t *addr, char **rest) {
 static void cmd_rst(char *param) {
     uint16_t speed_khz = g_i2c_speed_khz;
     bool no_reset = false;
-    uint16_t new_baud = 0;
+    uint16_t new_spbrg = 0;
 
     if (param != NULL && *param != '\0') {
         /* Parse '@'-separated tokens; modifies param in place */
@@ -401,7 +401,7 @@ static void cmd_rst(char *param) {
                     uint8_t s = p1 - '1';
                     if (p0 == 'S' && s < 8U) {
                         // S1-S8
-                        new_baud = UART_BAUD_SPBRG[s];
+                        new_spbrg = UART_BAUD_SPBRG[s];
                     } else {
                         send_ng_cm();
                         return;
@@ -424,8 +424,8 @@ static void cmd_rst(char *param) {
     i2c_recovery();
 
     /* Changing the Serial Communication Speed */
-    if (new_baud) {
-        uart_init(new_baud);
+    if (new_spbrg) {
+        uart_init(new_spbrg);
     }
 
     /* OK — send response at the new baud rate */
@@ -707,7 +707,7 @@ rcv_stop:
 /*
  *  uint8_t のビット並び順を逆転させる
  */
-static uint8_t reverse_bit(uint8_t h) {
+static uint8_t reverse_8bit(uint8_t h) {
     uint8_t r = 0;
     for(uint8_t i = 0; i < 8; i++) {
         r = (uint8_t)(r << 1U) | (h & 0x01U);
@@ -741,12 +741,12 @@ static void cmd_snt(char *data_str) {
      *  */
     
     bool data_read = false;
-    bool reverse_flg = false;
+    bool bit_reverse = false;
     if (option_str != NULL) {
         for (uint8_t i = 0; option_str[i] != '\0'; i++){
             switch (option_str[i]){
                 case 'R':
-                    reverse_flg = true;
+                    bit_reverse = true;
                     break;
                 case 'D':
                     data_read = true;
@@ -789,8 +789,8 @@ static void cmd_snt(char *data_str) {
     /* データ送信 */
     for (uint8_t i = 0; i < slen && ok; i += 2U) {
         parse_hex_u8(&data_str[i], &byte_val);
-        if (reverse_flg) {
-            byte_val = reverse_bit(byte_val);
+        if (bit_reverse) {
+            byte_val = reverse_8bit(byte_val);
         }
         if (!i2c_write(byte_val)) {
             ok = false;
@@ -904,7 +904,7 @@ void main(void) {
 
     /* Main command loop */
     static char cmd_buf[CMD_BUF_SIZE];
-    while(1) {
+    while (true) {
         uart_read_line(cmd_buf, CMD_BUF_SIZE);
         cmd_process(cmd_buf);
     }
