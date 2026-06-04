@@ -401,7 +401,7 @@ static void cmd_rst(char *param) {
                     uint8_t s = p1 - '1';
                     if (p0 == 'S' && s < 8U) {
                         // S1-S8
-                        new_baud = UART_BAUD[s];
+                        new_baud = UART_BAUD_SPBRG[s];
                     } else {
                         send_ng_cm();
                         return;
@@ -704,9 +704,10 @@ rcv_stop:
     send_ng_i2();
 }
 
-/* uint8_t のビット並び順を逆転させる
+/*
+ *  uint8_t のビット並び順を逆転させる
  */
-static uint8_t reverse_8bit(uint8_t h) {
+static uint8_t reverse_bit(uint8_t h) {
     uint8_t r = 0;
     for(uint8_t i = 0; i < 8; i++) {
         r = (uint8_t)(r << 1U) | (h & 0x01U);
@@ -740,12 +741,12 @@ static void cmd_snt(char *data_str) {
      *  */
     
     bool data_read = false;
-    bool bit_reverse = false;
+    bool reverse_flg = false;
     if (option_str != NULL) {
         for (uint8_t i = 0; option_str[i] != '\0'; i++){
             switch (option_str[i]){
                 case 'R':
-                    bit_reverse = true;
+                    reverse_flg = true;
                     break;
                 case 'D':
                     data_read = true;
@@ -788,8 +789,8 @@ static void cmd_snt(char *data_str) {
     /* データ送信 */
     for (uint8_t i = 0; i < slen && ok; i += 2U) {
         parse_hex_u8(&data_str[i], &byte_val);
-        if (bit_reverse) {
-            byte_val = reverse_8bit(byte_val);
+        if (reverse_flg) {
+            byte_val = reverse_bit(byte_val);
         }
         if (!i2c_write(byte_val)) {
             ok = false;
@@ -801,8 +802,8 @@ static void cmd_snt(char *data_str) {
     if (data_read) {
         uint8_t b;
         // TM16xxはI2C互換ではないため NACK は想定していない
-        // 1byte Readでも ACK とする
         // 本来はマスタ側からACK/NACKを送信するが、TM16xxがACKを送信してくる。
+        // 1byte Readでも ACK とする
         if (i2c_read(&b, 0)) {
             uart_putbyte_hex(b);
             uart_puts("\r\n");
@@ -889,7 +890,7 @@ static void cmd_process(char *line) {
 void main(void) {
     /* Initialise all peripherals */
     system_init();
-    uart_init(UART_BAUD[0]);
+    uart_init(UART_BAUD_SPBRG[0]);
     i2c_init(I2C_KHZ_DEFAULT);
 
     /* Startup reset sequence */
@@ -903,7 +904,7 @@ void main(void) {
 
     /* Main command loop */
     static char cmd_buf[CMD_BUF_SIZE];
-    for (;;) {
+    while(1) {
         uart_read_line(cmd_buf, CMD_BUF_SIZE);
         cmd_process(cmd_buf);
     }
