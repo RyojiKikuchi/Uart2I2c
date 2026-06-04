@@ -28,7 +28,6 @@ static const uint16_t UART_BAUD_SPBRG[8] = {
 };
 
 #define _XTAL_FREQ          32000000UL   /* 32 MHz internal oscillator */
-#define SPBRG_CALC_NUMBER   (uint16_t)(_XTAL_FREQ / 800U) // 16bitでspbrg計算のために事前にクロックを800で割っておく
 
 void uart_init(uint16_t baud_spbrg);
 void uart_putch(uint8_t c);
