@@ -369,7 +369,7 @@ static bool parse_slave_address(char *param, uint8_t *addr, char **rest) {
 static void cmd_rst(char *param) {
     uint16_t speed_khz = g_i2c_speed_khz;
     bool no_reset = false;
-    uint16_t new_baud = 0;
+    uint16_t new_spbrg = 0;
 
     if (param != NULL && *param != '\0') {
         /* Parse '@'-separated tokens; modifies param in place */
@@ -401,7 +401,7 @@ static void cmd_rst(char *param) {
                     uint8_t s = p1 - '1';
                     if (p0 == 'S' && s < 8U) {
                         // S1-S8
-                        new_baud = UART_BAUD[s];
+                        new_spbrg = UART_BAUD_SPBRG[s];
                     } else {
                         send_ng_cm();
                         return;
@@ -424,8 +424,8 @@ static void cmd_rst(char *param) {
     i2c_recovery();
 
     /* Changing the Serial Communication Speed */
-    if (new_baud) {
-        uart_init(new_baud);
+    if (new_spbrg) {
+        uart_init(new_spbrg);
     }
 
     /* OK — send response at the new baud rate */
@@ -704,7 +704,8 @@ rcv_stop:
     send_ng_i2();
 }
 
-/* uint8_t のビット並び順を逆転させる
+/*
+ *  uint8_t のビット並び順を逆転させる
  */
 static uint8_t reverse_8bit(uint8_t h) {
     uint8_t r = 0;
@@ -801,8 +802,8 @@ static void cmd_snt(char *data_str) {
     if (data_read) {
         uint8_t b;
         // TM16xxはI2C互換ではないため NACK は想定していない
-        // 1byte Readでも ACK とする
         // 本来はマスタ側からACK/NACKを送信するが、TM16xxがACKを送信してくる。
+        // 1byte Readでも ACK とする
         if (i2c_read(&b, 0)) {
             uart_putbyte_hex(b);
             uart_puts("\r\n");
@@ -889,7 +890,7 @@ static void cmd_process(char *line) {
 void main(void) {
     /* Initialise all peripherals */
     system_init();
-    uart_init(UART_BAUD[0]);
+    uart_init(UART_BAUD_SPBRG[0]);
     i2c_init(I2C_KHZ_DEFAULT);
 
     /* Startup reset sequence */
@@ -903,7 +904,7 @@ void main(void) {
 
     /* Main command loop */
     static char cmd_buf[CMD_BUF_SIZE];
-    for (;;) {
+    while (true) {
         uart_read_line(cmd_buf, CMD_BUF_SIZE);
         cmd_process(cmd_buf);
     }

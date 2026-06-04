@@ -6,6 +6,6 @@
 #ifndef VERSION_H
 #define VERSION_H
 
-#define ROM_VERSION "UartToI2c Ver1.02"
+#define ROM_VERSION "UartToI2c Ver1.03"
 
 #endif /* VERSION_H */

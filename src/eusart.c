@@ -11,9 +11,9 @@
  * Hardware EUSART initialisation
  * Configures the EUSART for 8N1 async mode at the selected baud rate.
  * Must be called after system_init() has configured TRIS and PPS.
- * uart_bps は通信速度を100で割った数値を設定する。 9600bps=96, 115200bps = 1152
+ * spbrg は通信速度から算出した値を設定 SPBRGx = (FOSC / (4 * BaudRate)) - 1
  * ----------------------------------------------------------------------- */
-void uart_init(uint16_t uart_bps) {
+void uart_init(uint16_t spbrg) {
 
     /* Switch UART baud rate: wait for TX shift register to drain then reconfigure EUSART.
      * TRMT (not TX1IF) is used here because the shift register must be fully empty before
@@ -25,8 +25,6 @@ void uart_init(uint16_t uart_bps) {
 #endif
     }
 
-    uint16_t b = uart_bps / 2;
-    uint16_t spbrg = ((SPBRG_CALC_NUMBER + (b / 2)) / b) - 1;
     SPBRGH = (uint8_t) ((spbrg >> 8U) & 0xFFU);
     SPBRGL = (uint8_t) (spbrg & 0xFFU);
     BAUDCON = 0x08U; /* BRG16=1 (16-bit BRG), ABDEN=0, WUE=0 */
