@@ -20,9 +20,6 @@ void uart_init(uint16_t spbrg) {
      * changing the baud rate; TX1IF only indicates TXREG is ready for the next byte.
      * OK response will be sent at the new baud rate. */
     while (!TXSTAbits.TRMT) {
-#ifdef WDT_ENABLED
-        CLRWDT();
-#endif
     }
 
     SPBRGH = (uint8_t) ((spbrg >> 8U) & 0xFFU);
@@ -36,14 +33,9 @@ void uart_init(uint16_t spbrg) {
  * Transmit one byte via hardware EUSART.
  * Blocks until TXREG is empty (TX1IF=1) before loading the next byte,
  * utilising the EUSART double buffer (TXREG + TSR).
- * When WDT_ENABLED is defined, CLRWDT is called each polling iteration
- * to keep the watchdog alive during large RCV output sequences.
  */
 void uart_putch(uint8_t c) {
     while (!PIR3bits.TX1IF) {
-#ifdef WDT_ENABLED
-        CLRWDT();
-#endif
     }
     TXREG = c;
 }
@@ -60,15 +52,10 @@ void uart_putbyte_hex(uint8_t b) {
 
 /**
  * Receive one byte via hardware EUSART.
- * Busy-waits for a received byte; when WDT is enabled, calls CLRWDT()
- * to keep the watchdog alive.
  * Clears overrun error (OERR) if set by toggling CREN.
  */
 uint8_t uart_getch(void) {
     while (!PIR3bits.RC1IF) {
-#ifdef WDT_ENABLED
-        CLRWDT(); /* pet watchdog while waiting for data */
-#endif
     }
     uint8_t data = RCREG; // 先にFIFOを読む
     if (RCSTAbits.OERR) { // その後でOERRをクリア

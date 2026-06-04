@@ -44,7 +44,7 @@
         <platform>3</platform>
       </toolsSet>
       <packs>
-        <pack name="PIC16F1xxxx_DFP" vendor="Microchip" version="1.29.444"/>
+        <pack name="PIC16F1xxxx_DFP" vendor="Microchip" version="1.31.465"/>
       </packs>
       <ScriptingSettings>
       </ScriptingSettings>
@@ -205,6 +205,8 @@
         <property key="memories.programmemory" value="true"/>
         <property key="memories.programmemory.ranges" value="0-7ff"/>
         <property key="poweroptions.powerenable" value="true"/>
+        <property key="programmerToGoFilePath"
+                  value="C:/Users/r-kik/MPLABXProjects/UartToI2c.X/debug/default/UartToI2c_ptg"/>
         <property key="programmerToGoImageName" value="UartToI2c_ptg"/>
         <property key="programoptions.donoteraseauxmem" value="false"/>
         <property key="programoptions.eraseb4program" value="true"/>

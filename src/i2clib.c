@@ -56,9 +56,6 @@ bool i2c_wait(bool isRead) {
                 }
             }
 
-#ifdef WDT_ENABLED
-            CLRWDT(); // I2Cポーリング中にウォッチドッグタイマーをリセット
-#endif
         }
 
         timeout_ms--; // 1ms経過（近似）
@@ -109,9 +106,6 @@ bool i2c_write(uint8_t data) {
                 PIR3bits.SSP1IF = 0;
                 return (SSP1CON2bits.ACKSTAT == 0); // 0=ACK, 1=NACK
             }
-#ifdef WDT_ENABLED
-            CLRWDT(); // I2Cポーリング中にウォッチドッグタイマーをリセット
-#endif
         }
     }
     return false;

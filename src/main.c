@@ -44,51 +44,6 @@
 #include "eusart.h"
 
 /* -----------------------------------------------------------------------
- * Configuration bits  (XC8 pragma style)
- * ----------------------------------------------------------------------- */
-// CONFIG1
-#pragma config FEXTOSC = OFF     // External oscillator disabled
-#pragma config RSTOSC  = HFINT32 // 32 MHz internal oscillator
-#pragma config CLKOUTEN = OFF    // CLKOUT disabled
-#pragma config CSWEN   = ON      // Clock switch enabled
-#pragma config FCMEN   = OFF     // Fail-safe clock monitor disabled
-
-// CONFIG2
-#pragma config MCLRE   = ON      // MCLR enabled (RA3 = MCLR)
-#pragma config PWRTE   = ON      // Power-up timer enabled
-#ifdef WDT_ENABLED
-#pragma config WDTE    = ON      // Watchdog timer enabled (always on)
-#else
-#pragma config WDTE    = OFF     // Watchdog timer disabled
-#endif
-#pragma config LPBOREN = ON      // Low-power BOR enabled
-#pragma config BOREN   = ON      // Brown-out reset enabled
-#pragma config BORV    = HI      // BOR voltage high
-#pragma config ZCD     = OFF     // Zero-cross detect disabled
-#pragma config PPS1WAY = OFF      /* PPS multiple-write enabled (required for I2C bus recovery) */
-#pragma config STVREN  = ON      // Stack overflow reset enabled
-
-// CONFIG3
-#ifdef WDT_ENABLED
-#pragma config WDTCPS  = WDTCPS_11 // WDT period ~2 s (CLRWDT called in uart_putch/uart_getch and I2C_Wait/I2C_ReadWait polling loops)
-#pragma config WDTCWS  = WDTCWS_7  // WDT window (don't care)
-#pragma config WDTCCS  = LFINTOSC  // WDT clock (don't care)
-#endif
-
-// CONFIG4
-#pragma config BBSIZE  = BB512   // Boot block size
-#pragma config BBEN    = OFF     // Boot block disabled
-#pragma config SAFEN   = OFF     // SAF disabled
-#pragma config WRTAPP  = OFF     // App memory write protected: off
-#pragma config WRTB    = OFF     // Boot block write: off
-#pragma config WRTC    = OFF     // Config registers write: off
-#pragma config WRTSAF  = OFF     // SAF write: off
-#pragma config LVP     = ON      // Low-voltage programming enabled
-
-// CONFIG5
-#pragma config CP      = OFF     // Code protection off
-
-/* -----------------------------------------------------------------------
  * Module-level state
  * ----------------------------------------------------------------------- */
 static uint16_t g_i2c_speed_khz = I2C_KHZ_DEFAULT; /* Current I2C speed in kbps */
@@ -180,9 +135,6 @@ static void i2c_device_reset(bool no_reset) {
     }
 
     /* 2. 500ms wait */
-#ifdef WDT_ENABLED
-    CLRWDT();
-#endif
     __delay_ms(500);
 
     /* 3. RESET HIGH (skipped when NR option given) */
@@ -191,9 +143,6 @@ static void i2c_device_reset(bool no_reset) {
     }
 
     /* 4. 200ms wait */
-#ifdef WDT_ENABLED
-    CLRWDT();
-#endif
     __delay_ms(200);
 
 }
