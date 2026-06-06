@@ -48,6 +48,7 @@
  * ----------------------------------------------------------------------- */
 static uint16_t g_i2c_speed_khz = I2C_KHZ_DEFAULT; /* Current I2C speed in kbps */
 static bool g_i2c_open = false; /* true while I2C bus is held open by NS flag; cleared on STOP or error */
+static uint8_t g_crc = 0;
 
 /* -----------------------------------------------------------------------
  * Interrupt Service Routine
@@ -241,16 +242,15 @@ static bool parse_hex_u8(const char *s, uint8_t *out) {
 /* -----------------------------------------------------------------------
  * CRC-8 checksum 
  * ----------------------------------------------------------------------- */
-static uint8_t calc_crc8(uint8_t crc, uint8_t data) {
-    uint8_t c = crc ^ data;
+static void calc_crc8(uint8_t data) {
+    g_crc = g_crc ^ data;
     for (uint8_t i = 0U; i < 8U; i++) {
-        if ((c & 0x80U) != 0U) {
-            c = (uint8_t) (((uint8_t) (c << 1U)) ^ CRC8_POLY);
+        if ((g_crc & 0x80U) != 0U) {
+            g_crc = (uint8_t) (((uint8_t) (g_crc << 1U)) ^ CRC8_POLY);
         } else {
-            c = (uint8_t) (c << 1U);
+            g_crc = (uint8_t) (g_crc << 1U);
         }
     }
-    return c;
 }
 
 /* -----------------------------------------------------------------------
@@ -459,15 +459,15 @@ static void cmd_snd(char *param) {
      * across NS-chained SND commands.  This allows the final SND (without NS)
      * to verify the CRC over the entire payload in one checksum field. */
     uint8_t slen = 0;
-    uint8_t run_crc = 0;
     uint8_t byte_val;
+    g_crc = 0;
     while (data_str[slen] != '\0') {
         if (!(slen & 0x01U)) {
             if (!parse_hex_u8(&data_str[slen], &byte_val)) {
                 send_ng_cm();
                 return;
             }
-            run_crc = calc_crc8(run_crc, byte_val);
+            calc_crc8(byte_val);
         }
         slen++;
     }
@@ -487,7 +487,7 @@ static void cmd_snd(char *param) {
             send_ng_cm();
             return;
         }
-        if (run_crc != recv_cksum) {
+        if (g_crc != recv_cksum) {
             send_ng_cs();
             return;
         }
@@ -620,7 +620,7 @@ static void cmd_rcv(char *param) {
 
     /* Receive bytes, output each as 2 hex digits immediately.
      * CRC-8 is accumulated on the fly over each received byte. */
-    uint8_t cksum = 0;
+    g_crc = 0;
     uint8_t b;
     while (nbytes--) {
         uint8_t ack_nack = 0; // 0 = ACK (続けて読み取る), 1 = NACK (読み取り終了)
@@ -631,13 +631,13 @@ static void cmd_rcv(char *param) {
             /* Timeout: stop I2C and return NG,I2 */
             goto rcv_recovery;
         }
-        cksum = calc_crc8(cksum, b);
+        calc_crc8(b);
         uart_putbyte_hex(b);
     }
 
     /* Append comma separator and CRC-8 checksum as 2 hex digits */
     uart_putch(',');
-    uart_putbyte_hex(cksum);
+    uart_putbyte_hex(g_crc);
 
     if (!i2c_stop()) {
         goto rcv_recovery;
