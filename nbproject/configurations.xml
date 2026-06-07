@@ -38,7 +38,7 @@
         <targetDevice>PIC16F15313</targetDevice>
         <targetHeader></targetHeader>
         <targetPluginBoard></targetPluginBoard>
-        <platformTool>PK5Tool</platformTool>
+        <platformTool>snap</platformTool>
         <languageToolchain>XC8</languageToolchain>
         <languageToolchainVersion>3.10</languageToolchainVersion>
         <platform>3</platform>
@@ -179,8 +179,7 @@
                   value="Press to select which tool pack to use"/>
         <property key="bluetoothsetting" value="do.not.change"/>
         <property key="communication.activationmode" value="nohv"/>
-        <property key="communication.interface"
-                  value="${communication.interface.default}"/>
+        <property key="communication.interface" value=""/>
         <property key="communication.interface.jtag" value="2wire"/>
         <property key="communication.speed" value="${communication.speed.default}"/>
         <property key="debugoptions.debug-startup" value="Use system settings"/>
@@ -275,6 +274,8 @@
         <property key="memories.programmemory" value="true"/>
         <property key="memories.programmemory.ranges" value="0-7ff"/>
         <property key="poweroptions.powerenable" value="true"/>
+        <property key="programmerToGoFilePath"
+                  value="C:/Users/r-kik/MPLABXProjects/UartToI2c.X/debug/default/UartToI2c_ptg"/>
         <property key="programmerToGoImageName" value="UartToI2c_ptg"/>
         <property key="programoptions.donoteraseauxmem" value="false"/>
         <property key="programoptions.eraseb4program" value="true"/>

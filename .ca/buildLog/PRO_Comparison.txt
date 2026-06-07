@@ -1,0 +1,25 @@
+make -f nbproject/Makefile-PRO_Comparison.mk SUBPROJECTS= .clean-conf
+make[1]: Entering directory 'C:/Users/r-kik/MPLABXProjects/UartToI2c.X'
+rm -f  -r .ca/build/PRO_Comparison/production
+rm -f  -r .ca/dist/PRO_Comparison/production
+make[1]: Leaving directory 'C:/Users/r-kik/MPLABXProjects/UartToI2c.X'
+[32mCLEAN SUCCESSFUL (total time: 153ms)[0m
+make -f nbproject/Makefile-PRO_Comparison.mk SUBPROJECTS= .build-conf
+make  -f nbproject/Makefile-PRO_Comparison.mk .ca/dist/PRO_Comparison/production/UartToI2c.X.production.hex
+make[2]: Entering directory 'C:/Users/r-kik/MPLABXProjects/UartToI2c.X'
+"C:\Program Files\Microchip\xc8\v3.10\bin\xc8-cc.exe"  -mcpu=16F15313 -c   -mdfp="C:/Users/r-kik/.mchp_packs/Microchip/PIC16F1xxxx_DFP/1.31.465/xc8"  -O2 -fasmfile -maddrqual=ignore -xassembler-with-cpp -mwarn=-3 -Wa,-a -DXPRJ_PRO_Comparison=PRO_Comparison  -msummary=-psect,-class,+mem,-hex,-file  -ginhx32 -Wl,--data-init -mno-keep-startup -mno-osccal -mno-resetbits -mno-save-resetbits -mno-download -mno-stackcall -mno-default-config-bits   -std=c99 -gdwarf-3 -mstack=compiled:auto:auto -mafrlcsj     -o .ca/build/PRO_Comparison/production/src/i2clib.p1 src/i2clib.c 
+make[2]: Leaving directory 'C:/Users/r-kik/MPLABXProjects/UartToI2c.X'
+make[2]: Entering directory 'C:/Users/r-kik/MPLABXProjects/UartToI2c.X'
+"C:\Program Files\Microchip\xc8\v3.10\bin\xc8-cc.exe"  -mcpu=16F15313 -c   -mdfp="C:/Users/r-kik/.mchp_packs/Microchip/PIC16F1xxxx_DFP/1.31.465/xc8"  -O2 -fasmfile -maddrqual=ignore -xassembler-with-cpp -mwarn=-3 -Wa,-a -DXPRJ_PRO_Comparison=PRO_Comparison  -msummary=-psect,-class,+mem,-hex,-file  -ginhx32 -Wl,--data-init -mno-keep-startup -mno-osccal -mno-resetbits -mno-save-resetbits -mno-download -mno-stackcall -mno-default-config-bits   -std=c99 -gdwarf-3 -mstack=compiled:auto:auto -mafrlcsj     -o .ca/build/PRO_Comparison/production/src/eusart.p1 src/eusart.c 
+make[2]: Leaving directory 'C:/Users/r-kik/MPLABXProjects/UartToI2c.X'
+make[2]: Entering directory 'C:/Users/r-kik/MPLABXProjects/UartToI2c.X'
+"C:\Program Files\Microchip\xc8\v3.10\bin\xc8-cc.exe"  -mcpu=16F15313 -c   -mdfp="C:/Users/r-kik/.mchp_packs/Microchip/PIC16F1xxxx_DFP/1.31.465/xc8"  -O2 -fasmfile -maddrqual=ignore -xassembler-with-cpp -mwarn=-3 -Wa,-a -DXPRJ_PRO_Comparison=PRO_Comparison  -msummary=-psect,-class,+mem,-hex,-file  -ginhx32 -Wl,--data-init -mno-keep-startup -mno-osccal -mno-resetbits -mno-save-resetbits -mno-download -mno-stackcall -mno-default-config-bits   -std=c99 -gdwarf-3 -mstack=compiled:auto:auto -mafrlcsj     -o .ca/build/PRO_Comparison/production/src/main.p1 src/main.c 
+make[2]: Leaving directory 'C:/Users/r-kik/MPLABXProjects/UartToI2c.X'
+make[2]: Entering directory 'C:/Users/r-kik/MPLABXProjects/UartToI2c.X'
+"C:\Program Files\Microchip\xc8\v3.10\bin\xc8-cc.exe"  -mcpu=16F15313 -Wl,-Map=.ca/dist/PRO_Comparison/production/UartToI2c.X.production.map  -DXPRJ_PRO_Comparison=PRO_Comparison  -Wl,--defsym=__MPLAB_BUILD=1   -mdfp="C:/Users/r-kik/.mchp_packs/Microchip/PIC16F1xxxx_DFP/1.31.465/xc8"  -O2 -fasmfile -maddrqual=ignore -xassembler-with-cpp -mwarn=-3 -Wa,-a -msummary=-psect,-class,+mem,-hex,-file  -ginhx32 -Wl,--data-init -mno-keep-startup -mno-osccal -mno-resetbits -mno-save-resetbits -mno-download -mno-stackcall -mno-default-config-bits -mafrlcsj -std=c99 -gdwarf-3 -mstack=compiled:auto:auto      -Wl,--memorysummary,.ca/dist/PRO_Comparison/production/memoryfile.xml -o .ca/dist/PRO_Comparison/production/UartToI2c.X.production.elf  .ca/build/PRO_Comparison/production/src/i2clib.p1 .ca/build/PRO_Comparison/production/src/eusart.p1 .ca/build/PRO_Comparison/production/src/main.p1     
+
+    Program space        used   74Bh (  1867) of   800h words   ( 91.2%)
+    Data space           used    C5h (   197) of   100h bytes   ( 77.0%)
+
+make[2]: Leaving directory 'C:/Users/r-kik/MPLABXProjects/UartToI2c.X'
+[32mBUILD SUCCESSFUL (total time: 2s)[0m

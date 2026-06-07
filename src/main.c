@@ -240,7 +240,8 @@ static bool parse_hex_u8(const char *s, uint8_t *out) {
 }
 
 /* -----------------------------------------------------------------------
- * CRC-8 checksum 
+ * CRC-8-CCITT checksum 
+ * x^8 + x^2 + x + 1 (0x07)
  * ----------------------------------------------------------------------- */
 static void calc_crc8(uint8_t data) {
     g_crc = g_crc ^ data;
