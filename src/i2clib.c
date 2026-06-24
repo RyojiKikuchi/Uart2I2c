@@ -7,7 +7,7 @@
  * I2C (MSSP) initialisation
  * Configures the MSSP peripheral for I2C Master mode at the given speed.
  * Caller must pass a validated speed (I2C_KHZ_MIN..I2C_KHZ_MAX).
- * speed_khzはuint_8tとするため1/10の値を設定する(100KHz=10)
+ * speed_khzはuint8_tとするため1/10の値を設定する(100KHz=10)
  * ----------------------------------------------------------------------- */
 void i2c_init(uint8_t speed_khz) {
 
