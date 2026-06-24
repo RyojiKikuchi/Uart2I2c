@@ -79,10 +79,9 @@
 /* -----------------------------------------------------------------------
  * Serial command buffer
  * CMD_BUF_SIZE must hold the longest possible command line:
- *   "SND,7F," (7) + I2C_DATA_MAX*2 hex chars + ",XX"  checksum (3) + ",NS" (3) + null = 146 bytes.
- * 147 provides one byte of slack — CMD_BUF_SIZE is kept at 147.
+ *   "SND,7F," (7) + I2C_DATA_MAX*2 hex chars(132) + ",XXXX"  checksum (5) + ",NS" (3) + null(1) = 148 bytes.
  * ----------------------------------------------------------------------- */
-#define CMD_BUF_SIZE   147
+#define CMD_BUF_SIZE   148
 
 /* -----------------------------------------------------------------------
  * I2C data payload limit
