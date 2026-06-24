@@ -266,7 +266,7 @@ static void calc_crc8(uint8_t data) {
 
 #ifdef CRC16
 
-void calc_crc16_init() {
+static void calc_crc16_init(void) {
     g_crc16_h = CRC16_INIT;
     g_crc16_l = CRC16_INIT;
 }
@@ -275,9 +275,9 @@ void calc_crc16_init() {
  * CRC-16-CCITT checksum 
  * X^16 + X^12 + X^5 + 1 (0x1021)
  * ----------------------------------------------------------------------- */
-void calc_crc16(uint8_t data) {
+static void calc_crc16(uint8_t data) {
 
-    for (uint8_t i = 0; i < 8; i++) {
+    for (uint8_t i = 0U; i < 8U; i++) {
         // データの指定ビットと、現在のCRC上位の最上位ビット(MSB)のXORを計算
         // (data >> (7 - i)) & 0x01  <-- データの対象ビット
         // (crc_high >> 7) & 0x01     <-- CRC上位のMSB
