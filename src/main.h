@@ -122,6 +122,13 @@
 
 #define NEWLINE "\r\n"
 
+/* Checksum selection: define exactly one of CRC8 or CRC16 */
+#if defined(CRC8) && defined(CRC16)
+#error "Define only one of CRC8 or CRC16"
+#elif !defined(CRC8) && !defined(CRC16)
+#error "Define CRC8 or CRC16"
+#endif
+
 //#define CRC8
 #define CRC16
 
