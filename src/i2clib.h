@@ -36,7 +36,7 @@
 
 #define I2C_TIMEOUT_MS  10U
 
-void i2c_init(uint16_t speed_khz);
+void i2c_init(uint8_t speed_khz);
 bool i2c_wait(bool isRead);
 bool i2c_start(void);
 bool i2c_restart(void);

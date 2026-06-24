@@ -7,13 +7,14 @@
  * I2C (MSSP) initialisation
  * Configures the MSSP peripheral for I2C Master mode at the given speed.
  * Caller must pass a validated speed (I2C_KHZ_MIN..I2C_KHZ_MAX).
+ * speedはuint8_tとするため1/10の値を設定する(100KHz=10)
  * ----------------------------------------------------------------------- */
-void i2c_init(uint16_t speed_khz) {
+void i2c_init(uint8_t speed) {
 
     SSP1CON1 = 0x00; // リセット
 
     // 100KHz超の場合、SMP=0に設定する
-    if (speed_khz > 100) {
+    if (speed > 10) {
         SSP1STAT = 0x00; // Fast Mode (SMP=0)
     } else {
         SSP1STAT = 0x80; // Standard Mode (SMP=1)
@@ -21,7 +22,7 @@ void i2c_init(uint16_t speed_khz) {
 
     // ボーレート計算 (Fosc=32MHz)
     // 32000 / (4 * speed) - 1
-    uint16_t add_val = (8000U / speed_khz) - 1;
+    uint16_t add_val = (800U / speed) - 1;
     if (add_val > 255U) {
         SSP1ADD = 255U; // 最小速度制限(31.25KHz)
     } else {
