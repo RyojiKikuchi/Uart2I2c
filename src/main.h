@@ -73,7 +73,7 @@
  * ----------------------------------------------------------------------- */
 #define _XTAL_FREQ  32000000UL   /* 32 MHz internal oscillator */
 
-#define I2C_KHZ_DEFAULT 100U
+#define I2C_KHZ_DEFAULT 10U     /* 100KHz */
 #define LOOP_CYCLE_1MS  (uint16_t)(_XTAL_FREQ / 4000U)
 
 /* -----------------------------------------------------------------------
@@ -92,7 +92,7 @@
  * I2C_DATA_MAX = floor((CMD_BUF_SIZE - 11) / 2) = floor(133/2) = 66 bytes.
  * ----------------------------------------------------------------------- */
 #define I2C_DATA_MAX   66        /* max bytes per SND command */
-#define RCV_BYTES_MAX  8192U     /* max bytes per RCV command */
+#define RCV_BYTES_MAX  4096U     /* max bytes per RCV command */
 
 /* -----------------------------------------------------------------------
  * Pin helpers (LATA bits)
@@ -112,16 +112,17 @@
 #define CMD_VER     CMD_CALC('V', 'E', 'R')
 #define CMD_NOP     CMD_CALC('N', 'O', 'P')
 
+#define CRC8_INIT  0x00U
 #define CRC8_POLY  0x07U
+#define CRC16_INIT  0xFFU
+#define CRC16_POLY_HIGH 0x10
+#define CRC16_POLY_LOW  0x21
 
 #define I2C_START_RETRY_COUNT 2U
 
-/* Watchdog configuration note:
- * Do not define WDT_ENABLED in this header. main.c checks WDT_ENABLED for
- * configuration pragmas before including main.h, so defining it here would
- * only affect later #ifdef WDT_ENABLED code paths and not the WDTE config.
- * Enable it via the project/compiler preprocessor settings so it is visible
- * before the configuration block in main.c.
- */
+#define NEWLINE "\r\n"
+
+//#define CRC8
+#define CRC16
 
 #endif /* MAIN_H */
