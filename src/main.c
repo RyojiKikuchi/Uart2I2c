@@ -283,9 +283,8 @@ static void calc_crc16(uint8_t data) {
         // (crc_high >> 7) & 0x01     <-- CRC上位のMSB
         uint8_t bit = ((data >> (7 - i)) ^ (g_crc16_h >> 7)) & 0x01;
 
-        // 16ビット全体の左シフトを、8ビット変数2つで実行
-        uint8_t carry = (g_crc16_l >> 7) & 0x01; // 下位のMSBが、上位のLSBへのはみ出し（キャリー）になる
-        g_crc16_h = (uint8_t) (g_crc16_h << 1) | carry;
+        // 16ビット全体の左シフト
+        g_crc16_h = (uint8_t) (g_crc16_h << 1) | ((g_crc16_l >> 7) & 0x01);
         g_crc16_l = (uint8_t) (g_crc16_l << 1);
 
         // 演算結果のビットが1であれば、多項式(0x1021)をそれぞれXOR
