@@ -111,18 +111,24 @@
 #define CMD_VER     CMD_CALC('V', 'E', 'R')
 #define CMD_NOP     CMD_CALC('N', 'O', 'P')
 
-#define CRC8_INIT  0x00U
-#define CRC8_POLY  0x07U
-#define CRC16_INIT  0xFFU
-#define CRC16_POLY_HIGH 0x10
-#define CRC16_POLY_LOW  0x21
-
 #define I2C_START_RETRY_COUNT 2U
 
 #define NEWLINE "\r\n"
 
 //#define CRC8
 #define CRC16
+
+#ifdef CRC8
+#define CRC8_INIT  0x00U
+#define CRC8_POLY  0x07U
+#endif
+
+#ifdef CRC16
+#define CRC16_INIT  0xFFU
+#define CRC16_POLY_HIGH 0x10
+#define CRC16_POLY_LOW  0x21
+#define CRC16_BYTE
+#endif
 
 /* Checksum selection: define exactly one of CRC8 or CRC16 */
 #if defined(CRC8) && defined(CRC16)
