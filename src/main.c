@@ -49,7 +49,7 @@
 static uint8_t g_i2c_speed_khz = I2C_KHZ_DEFAULT; /* Current I2C speed in kbps */
 static bool g_i2c_open = false; /* true while I2C bus is held open by NS flag; cleared on STOP or error */
 #ifdef CRC8
-static uint8_t g_crc = 0;
+static uint8_t g_crc;
 #endif
 #ifdef CRC16
 static uint8_t g_crc_h;
@@ -305,13 +305,12 @@ static void calc_crc(uint8_t data) {
 
     for (uint8_t i = 0U; i < 8U; i++) {
         // データの指定ビットと、現在のCRC上位の最上位ビット(MSB)のXORを計算
-        // (data >> (7 - i)) & 0x01  <-- データの対象ビット
-        // (crc_high >> 7) & 0x01     <-- CRC上位のMSB
-        uint8_t bit = ((data >> (7 - i)) ^ (g_crc_h >> 7)) & 0x01;
+        uint8_t bit = (data ^ g_crc_h) & 0x80U;
+        data <<= 1;
 
         // 16ビット全体の左シフト
-        g_crc_h = (uint8_t) (g_crc_h << 1) | ((g_crc_l >> 7) & 0x01);
-        g_crc_l = (uint8_t) (g_crc_l << 1);
+        g_crc_h = (uint8_t) (g_crc_h << 1) | (g_crc_l >> 7);
+        g_crc_l <<= 1;
 
         // 演算結果のビットが1であれば、多項式(0x1021)をそれぞれXOR
         if (bit) {
@@ -509,10 +508,8 @@ static void cmd_snd(char *param) {
         /* NS (No Stop) option: keep I2C bus open after sending, skip STOP */
         if (cksum_str[0] == 'N' && cksum_str[1] == 'S' && cksum_str[2] == '\0') {
             no_stop = true;
-            has_cksum = false;
         } else {
             has_cksum = true;
-
             if (no_stop_str != NULL) {
                 if (no_stop_str[0] == 'N' && no_stop_str[1] == 'S' && no_stop_str[2] == '\0') {
                     no_stop = true;
