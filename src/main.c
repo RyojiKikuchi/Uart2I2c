@@ -728,6 +728,7 @@ static void cmd_rcv(char *param) {
     }
 
     /* Append comma separator and checksum as hex digits */
+    uart_putch(',');
 #ifdef CRC8
     uart_putbyte_hex(g_crc);
 #endif
