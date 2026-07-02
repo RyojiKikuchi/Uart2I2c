@@ -528,13 +528,15 @@ static void cmd_snd(char *param) {
     /* Validate hex string before starting the I2C transaction.
      * Use uint8_t counter — buffers fit in 8 bits (CMD_BUF_SIZE = 144).
      *
-     * Compute running CRC-8 over current chunk, starting from accumulated state.
-     * g_i2c_crc is 0 for a fresh transaction and carries the accumulated value
+     * Compute running CRC over current chunk, starting from accumulated state.
+     * CRC state is 0 for a fresh transaction and carries the accumulated value
      * across NS-chained SND commands.  This allows the final SND (without NS)
      * to verify the CRC over the entire payload in one checksum field. */
     uint8_t slen = 0;
     uint8_t byte_val;
-    calc_crc_init();
+    if (!g_i2c_open) {
+        calc_crc_init();
+    }
     while (data_str[slen] != '\0') {
         if (!(slen & 0x01U)) {
             if (!parse_hex_u8(&data_str[slen], &byte_val)) {
