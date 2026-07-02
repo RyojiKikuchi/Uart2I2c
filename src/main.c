@@ -531,9 +531,7 @@ static void cmd_snd(char *param) {
      * to verify the CRC over the entire payload in one checksum field. */
     uint8_t slen = 0;
     uint8_t byte_val;
-    if (!g_i2c_open) {
-        calc_crc_init();
-    }
+    calc_crc_init();
     while (data_str[slen] != '\0') {
         if (!(slen & 0x01U)) {
             if (!parse_hex_u8(&data_str[slen], &byte_val)) {
