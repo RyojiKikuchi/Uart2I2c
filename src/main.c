@@ -49,11 +49,11 @@
 static uint8_t g_i2c_speed_khz = I2C_KHZ_DEFAULT; /* Current I2C speed in kbps */
 static bool g_i2c_open = false; /* true while I2C bus is held open by NS flag; cleared on STOP or error */
 #ifdef CRC8
-static uint8_t g_crc8 = 0;
+static uint8_t g_crc = 0;
 #endif
 #ifdef CRC16
-static uint8_t g_crc16_h;
-static uint8_t g_crc16_l;
+static uint8_t g_crc_h;
+static uint8_t g_crc_l;
 #endif
 
 /* -----------------------------------------------------------------------
@@ -247,17 +247,21 @@ static bool parse_hex_u8(const char *s, uint8_t *out) {
 
 #ifdef CRC8
 
+static void calc_crc_init(void) {
+    g_crc = CRC8_INIT;
+}
+
 /* -----------------------------------------------------------------------
  * CRC-8-CCITT checksum 
  * x^8 + x^2 + x + 1 (0x07)
  * ----------------------------------------------------------------------- */
-static void calc_crc8(uint8_t data) {
-    g_crc8 = g_crc8 ^ data;
+static void calc_crc(uint8_t data) {
+    g_crc = g_crc ^ data;
     for (uint8_t i = 0U; i < 8U; i++) {
-        if ((g_crc8 & 0x80U) != 0U) {
-            g_crc8 = (uint8_t) (((uint8_t) (g_crc8 << 1U)) ^ CRC8_POLY);
+        if ((g_crc & 0x80U) != 0U) {
+            g_crc = (uint8_t) (((uint8_t) (g_crc << 1U)) ^ CRC8_POLY);
         } else {
-            g_crc8 = (uint8_t) (g_crc8 << 1U);
+            g_crc = (uint8_t) (g_crc << 1U);
         }
     }
 }
@@ -266,34 +270,58 @@ static void calc_crc8(uint8_t data) {
 
 #ifdef CRC16
 
-static void calc_crc16_init(void) {
-    g_crc16_h = CRC16_INIT;
-    g_crc16_l = CRC16_INIT;
+static void calc_crc_init(void) {
+    g_crc_h = CRC16_INIT;
+    g_crc_l = CRC16_INIT;
 }
 
+#ifdef CRC16_BYTE
+
 /* -----------------------------------------------------------------------
- * CRC-16-CCITT checksum 
+ * CRC-16-CCITT(False-BYTE) checksum 
  * X^16 + X^12 + X^5 + 1 (0x1021)
  * ----------------------------------------------------------------------- */
-static void calc_crc16(uint8_t data) {
+static void calc_crc(uint8_t data) {
+    uint8_t x = data ^ g_crc_h; // 1バイト単位でXOR
+
+    // 左シフト（16bit）
+    g_crc_h = (uint8_t) ((g_crc_h << 1) | (g_crc_l >> 7));
+    g_crc_l <<= 1;
+
+    // MSBが1なら多項式適用
+    if (x & 0x80) {
+        g_crc_h ^= CRC16_POLY_HIGH;
+        g_crc_l ^= CRC16_POLY_LOW;
+    }
+}
+
+#else
+
+/* -----------------------------------------------------------------------
+ * CRC-16-CCITT(False-BIT) checksum 
+ * X^16 + X^12 + X^5 + 1 (0x1021)
+ * ----------------------------------------------------------------------- */
+static void calc_crc(uint8_t data) {
 
     for (uint8_t i = 0U; i < 8U; i++) {
         // データの指定ビットと、現在のCRC上位の最上位ビット(MSB)のXORを計算
         // (data >> (7 - i)) & 0x01  <-- データの対象ビット
         // (crc_high >> 7) & 0x01     <-- CRC上位のMSB
-        uint8_t bit = ((data >> (7 - i)) ^ (g_crc16_h >> 7)) & 0x01;
+        uint8_t bit = ((data >> (7 - i)) ^ (g_crc_h >> 7)) & 0x01;
 
         // 16ビット全体の左シフト
-        g_crc16_h = (uint8_t) (g_crc16_h << 1) | ((g_crc16_l >> 7) & 0x01);
-        g_crc16_l = (uint8_t) (g_crc16_l << 1);
+        g_crc_h = (uint8_t) (g_crc_h << 1) | ((g_crc_l >> 7) & 0x01);
+        g_crc_l = (uint8_t) (g_crc_l << 1);
 
         // 演算結果のビットが1であれば、多項式(0x1021)をそれぞれXOR
         if (bit) {
-            g_crc16_h ^= CRC16_POLY_HIGH;
-            g_crc16_l ^= CRC16_POLY_LOW;
+            g_crc_h ^= CRC16_POLY_HIGH;
+            g_crc_l ^= CRC16_POLY_LOW;
         }
     }
 }
+
+#endif
 
 #endif
 
@@ -380,7 +408,7 @@ static void cmd_rst(char *param) {
                     send_ng_cm();
                     return;
                 }
-                speed_khz = (uint8_t)(v / 10);
+                speed_khz = (uint8_t) (v / 10);
             } else {
                 // UART Speed change
                 uint8_t p0 = p[0];
@@ -500,30 +528,22 @@ static void cmd_snd(char *param) {
     /* Validate hex string before starting the I2C transaction.
      * Use uint8_t counter — buffers fit in 8 bits (CMD_BUF_SIZE = 144).
      *
-     * Compute running CRC-8 over current chunk, starting from accumulated state.
-     * g_i2c_crc is 0 for a fresh transaction and carries the accumulated value
+     * Compute running CRC over current chunk, starting from accumulated state.
+     * CRC state is 0 for a fresh transaction and carries the accumulated value
      * across NS-chained SND commands.  This allows the final SND (without NS)
      * to verify the CRC over the entire payload in one checksum field. */
     uint8_t slen = 0;
     uint8_t byte_val;
-#ifdef CRC8
-    g_crc8 = CRC8_INIT;
-#endif
-#ifdef CRC16
-    calc_crc16_init();
-#endif
+    if (!g_i2c_open) {
+        calc_crc_init();
+    }
     while (data_str[slen] != '\0') {
         if (!(slen & 0x01U)) {
             if (!parse_hex_u8(&data_str[slen], &byte_val)) {
                 send_ng_cm();
                 return;
             }
-#ifdef CRC8
-            calc_crc8(byte_val);
-#endif
-#ifdef CRC16
-            calc_crc16(byte_val);
-#endif
+            calc_crc(byte_val);
         }
         slen++;
     }
@@ -539,12 +559,12 @@ static void cmd_snd(char *param) {
     if (has_cksum) {
 #ifdef CRC8
         uint8_t recv_cksum;
-        if (!parse_hex_u8(cksum_str, &recv_cksum) ||
-                cksum_str[2] != '\0') {
+        if (cksum_str[2] != '\0' ||
+                !parse_hex_u8(cksum_str, &recv_cksum)) {
             send_ng_cm();
             return;
         }
-        if (g_crc8 != recv_cksum) {
+        if (g_crc != recv_cksum) {
             send_ng_cs();
             return;
         }
@@ -552,13 +572,13 @@ static void cmd_snd(char *param) {
 #ifdef CRC16
         uint8_t recv_cksumh;
         uint8_t recv_cksuml;
-        if (!parse_hex_u8(&cksum_str[0], &recv_cksumh) ||
-                !parse_hex_u8(&cksum_str[2], &recv_cksuml) ||
-                cksum_str[4] != '\0') {
+        if (cksum_str[4] != '\0' ||
+                !parse_hex_u8(&cksum_str[0], &recv_cksumh) ||
+                !parse_hex_u8(&cksum_str[2], &recv_cksuml)) {
             send_ng_cm();
             return;
         }
-        if (g_crc16_h != recv_cksumh || g_crc16_l != recv_cksuml) {
+        if (g_crc_h != recv_cksumh || g_crc_l != recv_cksuml) {
             send_ng_cs();
             return;
         }
@@ -691,13 +711,8 @@ static void cmd_rcv(char *param) {
     }
 
     /* Receive bytes, output each as 2 hex digits immediately.
-     * CRC-8 is accumulated on the fly over each received byte. */
-#ifdef CRC8
-    g_crc8 = CRC8_INIT;
-#endif
-#ifdef CRC16
-    calc_crc16_init();
-#endif
+     * CRC is accumulated on the fly over each received byte. */
+    calc_crc_init();
     uint8_t b;
     while (nbytes--) {
         uint8_t ack_nack = 0; // 0 = ACK (続けて読み取る), 1 = NACK (読み取り終了)
@@ -708,23 +723,17 @@ static void cmd_rcv(char *param) {
             /* Timeout: stop I2C and return NG,I2 */
             goto rcv_recovery;
         }
-#ifdef CRC8
-        calc_crc8(b);
-#endif
-#ifdef CRC16
-        calc_crc16(b);
-#endif
+        calc_crc(b);
         uart_putbyte_hex(b);
     }
 
-    /* Append comma separator and CRC-8 checksum as 2 hex digits */
-    uart_putch(',');
+    /* Append comma separator and checksum as hex digits */
 #ifdef CRC8
-    uart_putbyte_hex(g_crc8);
+    uart_putbyte_hex(g_crc);
 #endif
 #ifdef CRC16
-    uart_putbyte_hex(g_crc16_h);
-    uart_putbyte_hex(g_crc16_l);
+    uart_putbyte_hex(g_crc_h);
+    uart_putbyte_hex(g_crc_l);
 #endif
 
     if (!i2c_stop()) {
