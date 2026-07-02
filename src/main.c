@@ -709,7 +709,7 @@ static void cmd_rcv(char *param) {
     }
 
     /* Receive bytes, output each as 2 hex digits immediately.
-     * CRC-8 is accumulated on the fly over each received byte. */
+     * CRC is accumulated on the fly over each received byte. */
     calc_crc_init();
     uint8_t b;
     while (nbytes--) {
