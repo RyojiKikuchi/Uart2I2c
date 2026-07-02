@@ -127,7 +127,7 @@
 #define CRC16_INIT  0xFFU
 #define CRC16_POLY_HIGH 0x10
 #define CRC16_POLY_LOW  0x21
-#define CRC16_BYTE
+//#define CRC16_BYTE
 #endif
 
 /* Checksum selection: define exactly one of CRC8 or CRC16 */
