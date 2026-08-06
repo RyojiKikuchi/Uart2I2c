@@ -69,7 +69,7 @@ bool i2c_wait(bool isRead) {
 bool i2c_start(void) {
     if (!i2c_wait(false)) return false;
     SSP1CON2bits.SEN = 1;
-    return true;
+    return i2c_wait(false);
 }
 
 // リスタート条件
