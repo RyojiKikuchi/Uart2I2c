@@ -144,6 +144,8 @@ void i2c_recovery(void) {
     // SDA, SCLを出力モードに設定
     I2C_TRIS_SDA &= ~I2C_PIN_SDA;
     I2C_TRIS_SCL &= ~I2C_PIN_SCL;
+    I2C_LAT_SDA  |= I2C_PIN_SDA;   // open-drain release SDA
+    I2C_LAT_SCL  |= I2C_PIN_SCL;   // start from released-high
     
     // スレーブがSDAをLowに保持している場合、SCLを最大9回振って
     // スレーブの内部状態をリセットさせる（バス・クリア・シーケンス）
