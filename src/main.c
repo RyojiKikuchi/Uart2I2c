@@ -29,7 +29,7 @@
  *       S8       : set UART to 921600 bps (applied before OK response)
  *     Unknown option → no reset, returns NG,CM
  *   SND,<addr_hex>,<hexdata>[,<NS|checksum>]<CRLF> - I2C write (NS=no-stop; optional CRC-8 checksum)
- *   SNT,<hexdata>[,<R|D>]<CRLF> - I2C write (No addr) (R:bit Reversed, D:Data Read)
+ *   SNT,<hexdata>[,<R|D|E>]<CRLF> - I2C write (No addr) (R:bit Reversed, D:Data Read, E:ignore write errors)
  *   RCV,<addr_hex>,<nbytes><CRLF>             - I2C read (response includes CRC-8 checksum)
  *
  * Compiler: XC8
