@@ -24,9 +24,17 @@
 #define I2C_KHZ_MIN      30U
 #define I2C_KHZ_MAX     400U
 
-#define I2C_PIN         0b00110000  // RA4,RA5
 #define I2C_PIN_SCL     0b00010000  // SCL=RA4
 #define I2C_PIN_SDA     0b00100000  // SDA=RA5
+
+#define I2C_PORT_SCL    PORTA   // read: PORTx
+#define I2C_PORT_SDA    PORTA   // read: PORTx
+
+#define I2C_LAT_SCL     LATA    // write: LATx
+#define I2C_LAT_SDA     LATA    // write: LATx
+
+#define I2C_TRIS_SCL    TRISA
+#define I2C_TRIS_SDA    TRISA
 
 /* -----------------------------------------------------------------------
  * I2C address/direction bit constants

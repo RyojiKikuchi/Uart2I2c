@@ -142,36 +142,33 @@ void i2c_recovery(void) {
 
     // 2. ピンを一時的に手動制御（GPIO）に切り替えてバスを解放
     // SDA, SCLを出力モードに設定
-    TRISA &= ~I2C_PIN; // RA4, RA5を出力に
-
+    I2C_TRIS_SDA &= ~I2C_PIN_SDA;
+    I2C_TRIS_SCL &= ~I2C_PIN_SCL;
+    I2C_LAT_SDA  |= I2C_PIN_SDA;   // open-drain release SDA
+    I2C_LAT_SCL  |= I2C_PIN_SCL;   // start from released-high
+    
     // スレーブがSDAをLowに保持している場合、SCLを最大9回振って
     // スレーブの内部状態をリセットさせる（バス・クリア・シーケンス）
     for (uint8_t i = 0; i < 9; i++) {
-        //RA4 = 0;
-        PORTA &= ~I2C_PIN_SCL;
+        I2C_PORT_SCL &= ~I2C_PIN_SCL;
         __delay_us(5);
-        //RA4 = 1;
-        PORTA |= I2C_PIN_SCL;
+        I2C_PORT_SCL |= I2C_PIN_SCL;
         __delay_us(5);
         // もしSDAがHighに戻ったら（スレーブが解放したら）途中で抜けても良い
-        //if (RA5 == 1) break;
-        if ((PORTA & I2C_PIN_SDA) !=  0) break;
+        if ((I2C_PORT_SDA & I2C_PIN_SDA) !=  0) break;
     }
-//#define I2C_PIN_SCL     0b00010000  // SCL=RA4
-//#define I2C_PIN_SDA     0b00100000  // SDA=RA5
+
     // 3. ストップ条件を擬似的に生成（SDAをLow→Highへ）
-    //RA5 = 0;
-    PORTA &= ~I2C_PIN_SDA;
+    I2C_PORT_SDA &= ~I2C_PIN_SDA;
     __delay_us(5);
-    //RA4 = 1;
-    PORTA |= I2C_PIN_SCL;
+    I2C_PORT_SCL |= I2C_PIN_SCL;
     __delay_us(5);
-    //RA5 = 1;
-    PORTA |= I2C_PIN_SDA;
+    I2C_PORT_SDA |= I2C_PIN_SDA;
     __delay_us(5);
 
     // 4. ピン設定をMSSP用に戻す
-    TRISA |= I2C_PIN; // 再び入力(MSSP制御下)へ
+    I2C_TRIS_SDA |= I2C_PIN_SDA;    // 再び入力(MSSP制御下)へ
+    I2C_TRIS_SCL |= I2C_PIN_SCL;    // 再び入力(MSSP制御下)へ
 
     // 5. WCOL（書き込み衝突）とSSPOV（受信オーバーフロー）エラーフラグをクリア
     //    これらはソフトウェアで明示的にクリアしないとSSPEN ON/OFFを跨いで残留する
