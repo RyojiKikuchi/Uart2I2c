@@ -778,12 +778,14 @@ static void cmd_snt(char *data_str) {
     scan_to(data_str, ',', &option_str);
 
     /* オプション解析
-     *  R: ビット列の順番を逆転させる
-     *  D: データリードを行う
+     *  R: ビット列の順番を逆転させる   for TM1637
+     *  D: データリードを行う          for TM1637
+     *  E: 送信時のI2Cエラーを無視する  for NJU72343
      *  */
 
     bool data_read = false;
     bool bit_reverse = false;
+    bool no_error = false;
     if (option_str != NULL) {
         for (uint8_t i = 0; option_str[i] != '\0'; i++) {
             switch (option_str[i]) {
@@ -792,6 +794,9 @@ static void cmd_snt(char *data_str) {
                     break;
                 case 'D':
                     data_read = true;
+                    break;
+                case 'E':
+                    no_error = true;
                     break;
                 default:
                     send_ng_cm();
@@ -834,7 +839,7 @@ static void cmd_snt(char *data_str) {
         if (bit_reverse) {
             byte_val = reverse_8bit(byte_val);
         }
-        if (!i2c_write(byte_val)) {
+        if (!i2c_write(byte_val) && !no_error) {
             ok = false;
             goto snt_stop;
         }
