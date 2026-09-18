@@ -46,14 +46,35 @@
 /* -----------------------------------------------------------------------
  * Module-level state
  * ----------------------------------------------------------------------- */
+
+#define ASM
+#ifdef ASM
+
+#define ASM_REV
+#define ASM_CALCCRC
+
+static volatile uint8_t v1, v2, v3, v4;
+
+#define _STR(x) #x
+#define _STRINGIFY(x) _STR(x)
+#endif
+
 static uint8_t g_i2c_speed_khz = I2C_KHZ_DEFAULT; /* Current I2C speed in kbps */
 static bool g_i2c_open = false; /* true while I2C bus is held open by NS flag; cleared on STOP or error */
 #ifdef CRC8
 static uint8_t g_crc;
 #endif
+
 #ifdef CRC16
+
+#ifdef ASM_CALCCRC
+volatile uint8_t g_crc_h;
+volatile uint8_t g_crc_l;
+#else
 static uint8_t g_crc_h;
 static uint8_t g_crc_l;
+#endif
+
 #endif
 
 /* -----------------------------------------------------------------------
@@ -303,6 +324,47 @@ static void calc_crc(uint8_t data) {
  * ----------------------------------------------------------------------- */
 static void calc_crc(uint8_t data) {
 
+#ifdef ASM_CALCCRC
+
+    // 引数待避
+    v1 = data;
+
+    // ループ回数設定
+    asm("MOVLW 8");
+    asm("MOVWF _v2");
+    asm("CALC_CRC_BEGIN:");
+
+    // データの指定ビットと、現在のCRC上位の最上位ビット(MSB)のXORを計算
+    asm("MOVF _v1, W");
+    asm("XORWF _g_crc_h, W");
+    asm("MOVWF _v4");   // bit
+    
+    // 入力データをシフト
+    asm("LSLF _v1, F");
+    
+    // CRC 16ビット全体の左シフト
+    asm("LSLF _g_crc_l, F");
+    asm("RLF _g_crc_h, F");
+
+    // 演算結果のビットが1であれば、多項式(0x1021)をそれぞれXOR
+    asm("BTFSS _v4, 7");    // 最上位ビットのチェック
+    asm("GOTO CALC_CRC_SKIP");
+    
+    //            g_crc_h ^= CRC16_POLY_HIGH;
+    //            g_crc_l ^= CRC16_POLY_LOW;
+    asm("MOVLW " _STRINGIFY(CRC16_POLY_HIGH));
+    asm("XORWF _g_crc_h, F");
+    asm("MOVLW " _STRINGIFY(CRC16_POLY_LOW));
+    asm("XORWF _g_crc_l, F");
+    
+    asm("CALC_CRC_SKIP:");
+    
+    // ループ回数減算、0なら終了
+    asm("DECFSZ _v2, F");
+    asm("GOTO CALC_CRC_BEGIN");
+    
+#else
+    
     for (uint8_t i = 0U; i < 8U; i++) {
         // データの指定ビットと、現在のCRC上位の最上位ビット(MSB)のXORを計算
         uint8_t bit = (data ^ g_crc_h) & 0x80U;
@@ -318,6 +380,9 @@ static void calc_crc(uint8_t data) {
             g_crc_l ^= CRC16_POLY_LOW;
         }
     }
+
+#endif
+
 }
 
 #endif
@@ -750,12 +815,31 @@ rcv_stop:
  *  uint8_t のビット並び順を逆転させる
  */
 static uint8_t reverse_8bit(uint8_t h) {
+
+#ifdef ASM_REV
+    
+    asm("MOVWF _v1");
+    asm("CLRF _v2");
+    asm("MOVLW 8");
+    asm("MOVWF _v3");
+    
+    asm("REV_LOOP_BEGIN:");
+    asm("LSRF _v1, F");
+    asm("RLF _v2, F");
+    asm("DECFSZ _v3, F");
+    asm("GOTO REV_LOOP_BEGIN");
+    
+    return v2;
+    
+#else
     uint8_t r = 0;
     for (uint8_t i = 0; i < 8; i++) {
         r = (uint8_t) (r << 1U) | (h & 0x01U);
         h >>= 1;
     }
     return r;
+#endif
+    
 }
 
 /**

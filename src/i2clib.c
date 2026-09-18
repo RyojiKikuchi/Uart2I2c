@@ -3,6 +3,10 @@
  * ----------------------------------------------------------------------- */
 #include "i2clib.h"
 
+static void delay5us() {
+    __delay_us(5);
+}
+
 /* -----------------------------------------------------------------------
  * I2C (MSSP) initialisation
  * Configures the MSSP peripheral for I2C Master mode at the given speed.
@@ -151,20 +155,20 @@ void i2c_recovery(void) {
     // スレーブの内部状態をリセットさせる（バス・クリア・シーケンス）
     for (uint8_t i = 0; i < 9; i++) {
         I2C_PORT_SCL &= ~I2C_PIN_SCL;
-        __delay_us(5);
+        delay5us();
         I2C_PORT_SCL |= I2C_PIN_SCL;
-        __delay_us(5);
+        delay5us();
         // もしSDAがHighに戻ったら（スレーブが解放したら）途中で抜けても良い
         if ((I2C_PORT_SDA & I2C_PIN_SDA) !=  0) break;
     }
 
     // 3. ストップ条件を擬似的に生成（SDAをLow→Highへ）
     I2C_PORT_SDA &= ~I2C_PIN_SDA;
-    __delay_us(5);
+    delay5us();
     I2C_PORT_SCL |= I2C_PIN_SCL;
-    __delay_us(5);
+    delay5us();
     I2C_PORT_SDA |= I2C_PIN_SDA;
-    __delay_us(5);
+    delay5us();
 
     // 4. ピン設定をMSSP用に戻す
     I2C_TRIS_SDA |= I2C_PIN_SDA;    // 再び入力(MSSP制御下)へ
