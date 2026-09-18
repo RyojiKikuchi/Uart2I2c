@@ -327,8 +327,8 @@ static void calc_crc(uint8_t data) {
 #ifdef ASM_CALCCRC
 
     // 引数待避
-    asm("MOVWF _v1");
-    
+    v1 = data;
+
     // ループ回数設定
     asm("MOVLW 8");
     asm("MOVWF _v2");
