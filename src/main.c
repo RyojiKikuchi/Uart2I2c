@@ -824,7 +824,7 @@ static uint8_t reverse_8bit(uint8_t h) {
     asm("MOVWF _v3");
     
     asm("REV_LOOP_BEGIN:");
-    asm("LSRF _v1");
+    asm("LSRF _v1, F");
     asm("RLF _v2, F");
     asm("DECFSZ _v3, F");
     asm("GOTO REV_LOOP_BEGIN");
