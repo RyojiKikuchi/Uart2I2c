@@ -53,7 +53,7 @@
 #define ASM_REV
 #define ASM_CALCCRC
 
-volatile uint8_t v1, v2, v3, v4;
+static volatile uint8_t v1, v2, v3, v4;
 
 #define _STR(x) #x
 #define _STRINGIFY(x) _STR(x)
