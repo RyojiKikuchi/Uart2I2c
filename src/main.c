@@ -89,7 +89,18 @@ void __interrupt() isr(void) {
  * ----------------------------------------------------------------------- */
 static void system_init(void) {
     /* ----- Oscillator ----- */
+    
+    /* OSCCON1 : OSCILLATOR CONTROL REGISTER1
+     * 7   reserved : 0
+     * 6-4 NOSC     : 110  Clock Source HFINTOSC (1-32 MHz)
+     * 3-0 NDIV     : 0000 Clock divider 1
+     */
     OSCCON1 = 0x60; /* HFINTOSC, no div */
+    
+    /* OSCFRQ : HFINTOSC FREQUENCY SELECTION REGISTER
+     * 7-3 reserved : 00000
+     * 2-0 HFFRQ    : 110   Frequency Selection bits(MHz) 32
+     */
     OSCFRQ = 0x06; /* 32 MHz */
 
     /* Initial pin states:
@@ -118,10 +129,6 @@ static void system_init(void) {
     WPUA = 0x00; /* No weak pull-ups (external pull-ups used for I2C) */
     ODCONA = 0b00110000; /* RA4(SCL1) and RA5(SDA1): open-drain */
 
-    //INLVLA &= ~0x30;    // RA4, RA5 を I2Cレベル(SMBus/I2C)しきい値に設定
-    INLVLA |= 0x30;
-    SLRCONA |= 0x30; // I2C規格に合わせ、スルーレートを制限（急峻な変化を抑える）
-
     /* PPS: route EUSART TX/RX to pins.
      * The unlock sequence must not be interrupted.
      * PPS1WAY is OFF, so multiple PPS writes are permitted if needed. */
@@ -132,13 +139,14 @@ static void system_init(void) {
     PPSLOCKbits.PPSLOCKED = 0; /* unlock */
 
     // 1. PPS設定: ピン割り当て (RA4=SCL, RA5=SDA)
-    // 入力設定 (デバイス側がピンを見るための設定)
-    SSP1CLKPPS = 0x04; // SCL入力: RA4
-    SSP1DATPPS = 0x05; // SDA入力: RA5
 
-    // I2C設定
-    RA4PPS = 0x15; // RA4出力: SCL1
-    RA5PPS = 0x16; // RA5出力: SDA1
+    // I2C入力設定 (デバイス側がピンを見るための設定)
+    SSP1CLKPPS = I2C_PPSIN_CLK; // SCL入力: RA4
+    SSP1DATPPS = I2C_PPSIN_DAT; // SDA入力: RA5
+
+    // I2C出力設定
+    RA4PPS = I2C_PPSOUT_SCL; // RA4出力: SCL1
+    RA5PPS = I2C_PPSOUT_SDA; // RA5出力: SDA1
 
     // シリアル通信設定
     RA0PPS = 0x0F; /* RA0 → TX1 output */
