@@ -52,7 +52,7 @@
 #define I2C_PPSIN_DAT   0x05    // RA5
 
 // PPS OUTPUT SIGNAL ROUTING
-#define I2C_PPSOUT_SCL  0x15    // SLC1
+#define I2C_PPSOUT_SCL  0x15    // SCL1
 #define I2C_PPSOUT_SDA  0x16    // SDA1
 
 /* -----------------------------------------------------------------------
@@ -63,7 +63,6 @@
 
 #define I2C_TIMEOUT_MS  10U
 
-static void delay5us(void);
 void i2c_init(uint8_t speed_khz);
 bool i2c_wait(bool isRead);
 bool i2c_start(void);
