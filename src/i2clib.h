@@ -16,13 +16,18 @@
  * ----------------------------------------------------------------------- */
 
 #define _XTAL_FREQ  32000000UL   /* 32 MHz internal oscillator */
-#define LOOP_CYCLE_1MS  (uint16_t)(_XTAL_FREQ / 4000U)
+#define LOOP_CYCLE_READ_1MS  (uint16_t)(_XTAL_FREQ / 2000U)
+#define LOOP_CYCLE_WRITE_1MS  (uint16_t)(_XTAL_FREQ / 4000U)
 
 /* -----------------------------------------------------------------------
  * I2C speed limits in khz (uint16_t) — used for 16-bit-only arithmetic
  * ----------------------------------------------------------------------- */
 #define I2C_KHZ_MIN      30U
 #define I2C_KHZ_MAX     400U
+
+/* -----------------------------------------------------------------------
+ * I2C Pin Configuration & PPS Configuration
+ * ----------------------------------------------------------------------- */
 
 #define I2C_PIN_SCL     0b00010000  // SCL=RA4
 #define I2C_PIN_SDA     0b00100000  // SDA=RA5
@@ -33,8 +38,22 @@
 #define I2C_LAT_SCL     LATA    // write: LATx
 #define I2C_LAT_SDA     LATA    // write: LATx
 
-#define I2C_TRIS_SCL    TRISA
+#define I2C_TRIS_SCL    TRISA 
 #define I2C_TRIS_SDA    TRISA
+
+#define I2C_INLVL_SCL   INLVLA
+#define I2C_INLVL_SDA   INLVLA
+
+#define I2C_SLRCON_SCL  SLRCONA
+#define I2C_SLRCON_SDA  SLRCONA
+
+// PPS INPUT SIGNAL ROUTING
+#define I2C_PPSIN_CLK   0x04    // RA4
+#define I2C_PPSIN_DAT   0x05    // RA5
+
+// PPS OUTPUT SIGNAL ROUTING
+#define I2C_PPSOUT_SCL  0x15    // SCL1
+#define I2C_PPSOUT_SDA  0x16    // SDA1
 
 /* -----------------------------------------------------------------------
  * I2C address/direction bit constants

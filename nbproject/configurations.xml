@@ -38,13 +38,13 @@
         <targetDevice>PIC16F15313</targetDevice>
         <targetHeader></targetHeader>
         <targetPluginBoard></targetPluginBoard>
-        <platformTool>snap</platformTool>
+        <platformTool>PK5Tool</platformTool>
         <languageToolchain>XC8</languageToolchain>
         <languageToolchainVersion>3.10</languageToolchainVersion>
         <platform>3</platform>
       </toolsSet>
       <packs>
-        <pack name="PIC16F1xxxx_DFP" vendor="Microchip" version="1.31.465"/>
+        <pack name="PIC16F1xxxx_DFP" vendor="Microchip" version="1.32.471"/>
       </packs>
       <ScriptingSettings>
       </ScriptingSettings>
