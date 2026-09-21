@@ -76,11 +76,8 @@ static uint8_t g_crc;
 
 #ifdef CRC16
 
-#ifdef ASM_CALCCRC
-#else
 static uint8_t g_crc_h;
 static uint8_t g_crc_l;
-#endif
 
 #endif
 
@@ -318,28 +315,6 @@ static void calc_crc_init(void) {
 
 }
 
-#ifdef CRC16_BYTE
-
-/* -----------------------------------------------------------------------
- * CRC-16-CCITT(False-BYTE) checksum 
- * X^16 + X^12 + X^5 + 1 (0x1021)
- * ----------------------------------------------------------------------- */
-static void calc_crc(uint8_t data) {
-    uint8_t x = data ^ g_crc_h; // 1バイト単位でXOR
-
-    // 左シフト（16bit）
-    g_crc_h = (uint8_t) ((g_crc_h << 1) | (g_crc_l >> 7));
-    g_crc_l <<= 1;
-
-    // MSBが1なら多項式適用
-    if (x & 0x80) {
-        g_crc_h ^= CRC16_POLY_HIGH;
-        g_crc_l ^= CRC16_POLY_LOW;
-    }
-}
-
-#else
-
 /* -----------------------------------------------------------------------
  * CRC-16-CCITT(False-BIT) checksum 
  * X^16 + X^12 + X^5 + 1 (0x1021)
@@ -408,8 +383,6 @@ static void calc_crc(uint8_t data) {
 #endif
 
 }
-
-#endif
 
 #endif
 
