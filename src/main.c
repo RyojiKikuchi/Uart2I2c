@@ -53,7 +53,16 @@
 #define ASM_REV
 #define ASM_CALCCRC
 
-static volatile uint8_t v1, v2, v3, v4;
+typedef struct {
+    volatile uint8_t v1;        // _v+0
+    volatile uint8_t v2;        // _v+1
+    volatile uint8_t v3;        // _v+2
+    volatile uint8_t v4;        // _v+3
+    volatile uint8_t g_crc_h;   // _v+4
+    volatile uint8_t g_crc_l;   // _v+5
+} asm_vars_t;
+
+static asm_vars_t v;
 
 #define _STR(x) #x
 #define _STRINGIFY(x) _STR(x)
@@ -68,8 +77,6 @@ static uint8_t g_crc;
 #ifdef CRC16
 
 #ifdef ASM_CALCCRC
-volatile uint8_t g_crc_h;
-volatile uint8_t g_crc_l;
 #else
 static uint8_t g_crc_h;
 static uint8_t g_crc_l;
@@ -89,14 +96,14 @@ void __interrupt() isr(void) {
  * ----------------------------------------------------------------------- */
 static void system_init(void) {
     /* ----- Oscillator ----- */
-    
+
     /* OSCCON1 : OSCILLATOR CONTROL REGISTER1
      * 7   reserved : 0
      * 6-4 NOSC     : 110  Clock Source HFINTOSC (1-32 MHz)
      * 3-0 NDIV     : 0000 Clock divider 1
      */
     OSCCON1 = 0x60; /* HFINTOSC, no div */
-    
+
     /* OSCFRQ : HFINTOSC FREQUENCY SELECTION REGISTER
      * 7-3 reserved : 00000
      * 2-0 HFFRQ    : 110   Frequency Selection bits(MHz) 32
@@ -300,8 +307,15 @@ static void calc_crc(uint8_t data) {
 #ifdef CRC16
 
 static void calc_crc_init(void) {
+
+#ifdef ASM_CALCCRC
+    v.g_crc_h = CRC16_INIT;
+    v.g_crc_l = CRC16_INIT;
+#else
     g_crc_h = CRC16_INIT;
     g_crc_l = CRC16_INIT;
+#endif
+
 }
 
 #ifdef CRC16_BYTE
@@ -335,44 +349,46 @@ static void calc_crc(uint8_t data) {
 #ifdef ASM_CALCCRC
 
     // 引数待避
-    v1 = data;
+    v.v1 = data;
 
+    asm("BANKSEL _v");
+    
     // ループ回数設定
     asm("MOVLW 8");
-    asm("MOVWF _v2");
+    asm("MOVWF _v+1");
     asm("CALC_CRC_BEGIN:");
 
     // データの指定ビットと、現在のCRC上位の最上位ビット(MSB)のXORを計算
-    asm("MOVF _v1, W");
-    asm("XORWF _g_crc_h, W");
-    asm("MOVWF _v4");   // bit
-    
+    asm("MOVF _v+0, W");
+    asm("XORWF _v+4, W");
+    asm("MOVWF _v+3"); // bit
+
     // 入力データをシフト
-    asm("LSLF _v1, F");
-    
+    asm("LSLF _v+0, F");
+
     // CRC 16ビット全体の左シフト
-    asm("LSLF _g_crc_l, F");
-    asm("RLF _g_crc_h, F");
+    asm("LSLF _v+5, F");
+    asm("RLF _v+4, F");
 
     // 演算結果のビットが1であれば、多項式(0x1021)をそれぞれXOR
-    asm("BTFSS _v4, 7");    // 最上位ビットのチェック
+    asm("BTFSS _v+3, 7"); // 最上位ビットのチェック
     asm("GOTO CALC_CRC_SKIP");
-    
+
     //            g_crc_h ^= CRC16_POLY_HIGH;
     //            g_crc_l ^= CRC16_POLY_LOW;
     asm("MOVLW " _STRINGIFY(CRC16_POLY_HIGH));
-    asm("XORWF _g_crc_h, F");
+    asm("XORWF _v+4, F");
     asm("MOVLW " _STRINGIFY(CRC16_POLY_LOW));
-    asm("XORWF _g_crc_l, F");
-    
+    asm("XORWF _v+5, F");
+
     asm("CALC_CRC_SKIP:");
-    
+
     // ループ回数減算、0なら終了
-    asm("DECFSZ _v2, F");
+    asm("DECFSZ _v+1, F");
     asm("GOTO CALC_CRC_BEGIN");
-    
+
 #else
-    
+
     for (uint8_t i = 0U; i < 8U; i++) {
         // データの指定ビットと、現在のCRC上位の最上位ビット(MSB)のXORを計算
         uint8_t bit = (data ^ g_crc_h) & 0x80U;
@@ -646,7 +662,7 @@ static void cmd_snd(char *param) {
             send_ng_cm();
             return;
         }
-        if (g_crc_h != recv_cksumh || g_crc_l != recv_cksuml) {
+        if (v.g_crc_h != recv_cksumh || v.g_crc_l != recv_cksuml) {
             send_ng_cs();
             return;
         }
@@ -801,8 +817,8 @@ static void cmd_rcv(char *param) {
     uart_putbyte_hex(g_crc);
 #endif
 #ifdef CRC16
-    uart_putbyte_hex(g_crc_h);
-    uart_putbyte_hex(g_crc_l);
+    uart_putbyte_hex(v.g_crc_h);
+    uart_putbyte_hex(v.g_crc_l);
 #endif
 
     if (!i2c_stop()) {
@@ -825,20 +841,22 @@ rcv_stop:
 static uint8_t reverse_8bit(uint8_t h) {
 
 #ifdef ASM_REV
+
+    asm("BANKSEL _v");
     
-    asm("MOVWF _v1");
-    asm("CLRF _v2");
+    asm("MOVWF _v+0");
+    asm("CLRF _v+1");
     asm("MOVLW 8");
-    asm("MOVWF _v3");
-    
+    asm("MOVWF _v+2");
+
     asm("REV_LOOP_BEGIN:");
-    asm("LSRF _v1, F");
-    asm("RLF _v2, F");
-    asm("DECFSZ _v3, F");
+    asm("LSRF _v+0, F");
+    asm("RLF _v+1, F");
+    asm("DECFSZ _v+2, F");
     asm("GOTO REV_LOOP_BEGIN");
-    
-    return v2;
-    
+
+    return v.v2;
+
 #else
     uint8_t r = 0;
     for (uint8_t i = 0; i < 8; i++) {
@@ -847,7 +865,7 @@ static uint8_t reverse_8bit(uint8_t h) {
     }
     return r;
 #endif
-    
+
 }
 
 /**
