@@ -3,6 +3,9 @@
  * ----------------------------------------------------------------------- */
 #include "i2clib.h"
 
+/* -----------------------------------------------------------------------
+ * 5us delay
+ * ----------------------------------------------------------------------- */
 static void delay5us() {
     __delay_us(5);
 }
@@ -15,6 +18,15 @@ static void delay5us() {
  * ----------------------------------------------------------------------- */
 void i2c_init(uint8_t speed) {
 
+    // ピン設定
+    I2C_INLVL_SCL |= I2C_PIN_SCL;
+    I2C_INLVL_SDA |= I2C_PIN_SDA;
+
+    I2C_SLRCON_SCL |= I2C_PIN_SCL;
+    I2C_SLRCON_SDA |= I2C_PIN_SDA;
+    
+    // MSSP設定
+    
     SSP1CON1 = 0x00; // リセット
 
     // 100KHz超の場合、SMP=0に設定する
@@ -24,7 +36,7 @@ void i2c_init(uint8_t speed) {
         SSP1STAT = 0x80; // Standard Mode (SMP=1)
     }
 
-    // ボーレート計算 (Fosc=32MHz)
+    // I2C速度設定(Fosc=32MHz)
     // 32000 / (4 * speed) - 1
     uint16_t add_val = (800U / speed) - 1;
     if (add_val > 255U) {
@@ -34,31 +46,44 @@ void i2c_init(uint8_t speed) {
     }
 
     // 3. MSSP設定 (Master mode)
+    //  5  : SSPEN = 1
+    //  3-0: SSPM = 1000  I2C Master mode, clock = FOSC / (4 * (SSP1ADD+1))
     SSP1CON1 = 0x28; // I2C Master mode, SSP enable
 
 }
 
 // 待機関数
 // 戻り値: true = 成功, false = タイムアウト失敗
+/* -----------------------------------------------------------------------
+ * 待機関数
+ * isRead: read時 = true, write時 = false
+ * return: true = 成功, false = タイムアウト失敗
+ * ----------------------------------------------------------------------- */
 bool i2c_wait(bool isRead) {
+    
     uint8_t timeout_ms = I2C_TIMEOUT_MS;
     while (timeout_ms > 0) {
-        uint16_t count = LOOP_CYCLE_1MS; // 約1ms分のループ
+        uint16_t count = isRead ? LOOP_CYCLE_READ_1MS : LOOP_CYCLE_WRITE_1MS; // 約1ms分のループ
+        
         while (count--) {
 
-            if (!isRead) {
+            if (isRead) {
+
+                // 下記のフラグがすべて0になるのを待つ
+                // SSP1CON2  RCEN
+                if (!SSP1CON2bits.RCEN) {
+                    return true; // 成功
+                }
+
+            } else {
+
                 // 下記のフラグがすべて0になるのを待つ
                 // SSP1STATbits.BF: バッファフル (送信中)
                 // SSP1CON2 & 0x1F: SEN, RSEN, PEN, RCEN, ACKEN (各条件の実行中)
                 if (!(SSP1STAT & 0x01) && !(SSP1CON2 & 0x1F)) {
                     return true; // 成功
                 }
-            } else {
-                // 下記のフラグがすべて0になるのを待つ
-                // SSP1CON2  RSEN
-                if (!SSP1CON2bits.RCEN) {
-                    return true; // 成功
-                }
+
             }
 
         }
@@ -66,10 +91,10 @@ bool i2c_wait(bool isRead) {
         timeout_ms--; // 1ms経過（近似）
     }
     return false;
+    
 }
 
 // 開始条件
-
 bool i2c_start(void) {
     if (!i2c_wait(false)) return false;
     SSP1CON2bits.SEN = 1;
@@ -105,7 +130,7 @@ bool i2c_write(uint8_t data) {
     // 確定するSSP1IFのセットを待つ
     uint8_t timeout_ms = 10;
     while (timeout_ms--) {
-        uint16_t count = LOOP_CYCLE_1MS;
+        uint16_t count = LOOP_CYCLE_WRITE_1MS;
         while (count--) {
             if (PIR3bits.SSP1IF) {
                 PIR3bits.SSP1IF = 0;
@@ -148,26 +173,26 @@ void i2c_recovery(void) {
     // SDA, SCLを出力モードに設定
     I2C_TRIS_SDA &= ~I2C_PIN_SDA;
     I2C_TRIS_SCL &= ~I2C_PIN_SCL;
-    I2C_LAT_SDA  |= I2C_PIN_SDA;   // open-drain release SDA
-    I2C_LAT_SCL  |= I2C_PIN_SCL;   // start from released-high
+    I2C_LAT_SDA  |= I2C_LAT_SDA;   // open-drain release SDA
+    I2C_LAT_SCL  |= I2C_LAT_SCL;   // start from released-high
     
     // スレーブがSDAをLowに保持している場合、SCLを最大9回振って
     // スレーブの内部状態をリセットさせる（バス・クリア・シーケンス）
     for (uint8_t i = 0; i < 9; i++) {
-        I2C_PORT_SCL &= ~I2C_PIN_SCL;
+        I2C_LAT_SCL &= ~I2C_PIN_SCL;
         delay5us();
-        I2C_PORT_SCL |= I2C_PIN_SCL;
+        I2C_LAT_SCL |= I2C_PIN_SCL;
         delay5us();
         // もしSDAがHighに戻ったら（スレーブが解放したら）途中で抜けても良い
-        if ((I2C_PORT_SDA & I2C_PIN_SDA) !=  0) break;
+        if ((I2C_LAT_SDA & I2C_PIN_SDA) !=  0) break;
     }
 
     // 3. ストップ条件を擬似的に生成（SDAをLow→Highへ）
-    I2C_PORT_SDA &= ~I2C_PIN_SDA;
+    I2C_LAT_SDA &= ~I2C_PIN_SDA;
     delay5us();
-    I2C_PORT_SCL |= I2C_PIN_SCL;
+    I2C_LAT_SCL |= I2C_PIN_SCL;
     delay5us();
-    I2C_PORT_SDA |= I2C_PIN_SDA;
+    I2C_LAT_SDA |= I2C_PIN_SDA;
     delay5us();
 
     // 4. ピン設定をMSSP用に戻す
